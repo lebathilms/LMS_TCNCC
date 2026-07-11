@@ -78,9 +78,9 @@
 
     <script>
         // Cấu hình API Endpoint trực tiếp tới Supabase REST API
-        const API_URL = 'https://tlvuxvbygfcwypfbywqq.supabase.co/rest/v1';
-        const API_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRsdnV4dmJ5Z2Zjd3lwZmJ5d3FxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTU5NTAwMDAsImV4cCI6MjAyNTUxMDAwMH0.1_RURv_pD_55rQZc8V1G2p7Z_M8Z4_v38_wz8_w';
-        
+         const SUPABASE_URL = 'https://spkbptgjviokebkqcssn.supabase.co/rest/v1/';
+        const SUPABASE_KEY = 'sb_publishable_k8hAOCZz4hj_r2wlvSqWXQ_FyTpXc_k';
+        const supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         const headers = {
             'apikey': API_KEY,
             'Authorization': `Bearer ${API_KEY}`,
