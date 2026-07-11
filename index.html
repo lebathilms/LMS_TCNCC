@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ thống LMS Đám Mây - Google Sheets DB</title>
+    <title>Hệ thống LMS Đám Mây - Cách 1</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         .list-group-item.active small { color: rgba(255,255,255,0.8) !important; }
@@ -37,21 +37,22 @@
     </div>
 
     <script>
-        // Cấu hình ID Google Sheet của anh
+        // 🛠️ ĐIỀN ID FILE GOOGLE SHEET CỦA ANH VÀO ĐÂY
         const SHEET_ID = '1Hh-JSTQvt7y-Yr0I1U-6aoRaoJwX4Kb_1kBl-7OdX28';
         
         let allCourses = [];
         let allLessons = [];
         let currentCourseId = null;
 
-        // Hàm chuyển đổi dữ liệu CSV từ Google Sheet sang dạng JSON mượt mà
+        // Hàm chuyển đổi CSV thành Object dữ liệu mượt mà
         function csvToObjects(csvText) {
             const lines = csvText.split('\n').map(line => line.trim()).filter(line => line.length > 0);
             if (lines.length === 0) return [];
+            
+            // Lấy danh sách tiêu đề cột ở hàng đầu tiên
             const headers = lines[0].split(',').map(h => h.replace(/^"|"$/g, '').trim());
             
             return lines.slice(1).map(line => {
-                // Xử lý cắt chuỗi theo dấu phẩy nhưng giữ nguyên dữ liệu trong dấu ngoặc kép
                 const values = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || line.split(',');
                 const obj = {};
                 headers.forEach((header, index) => {
@@ -62,30 +63,30 @@
             });
         }
 
-        // Tải toàn bộ dữ liệu từ đám mây Google Sheets về
+        // Tải dữ liệu từ Google Sheets Cloud
         async function loadDataFromCloud() {
             try {
-                // Gọi data từ sheet 'courses'
+                // Tải danh sách khóa học
                 const resCourses = await fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=courses`);
                 const textCourses = await resCourses.text();
                 allCourses = csvToObjects(textCourses);
 
-                // Gọi data từ sheet 'lessons'
+                // Tải danh sách bài học
                 const resLessons = await fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=lessons`);
                 const textLessons = await resLessons.text();
                 allLessons = csvToObjects(textLessons);
 
                 renderCourses();
             } catch (err) {
-                document.getElementById('course-list').innerHTML = `<div class="p-3 text-danger">Không thể kết nối đến đám mây Google: ${err.message}</div>`;
+                document.getElementById('course-list').innerHTML = `<div class="p-3 text-danger">Không thể tải dữ liệu: ${err.message}</div>`;
             }
         }
 
-        // Render danh mục khóa học
+        // Hiển thị danh sách khóa học lên màn hình
         function renderCourses() {
             const listContainer = document.getElementById('course-list');
             if (allCourses.length === 0) {
-                listContainer.innerHTML = '<div class="p-3 text-center text-muted">Chưa có khóa học nào trên Cloud.</div>';
+                listContainer.innerHTML = '<div class="p-3 text-center text-muted">Chưa có dữ liệu trên file Trang tính.</div>';
                 return;
             }
 
@@ -102,7 +103,7 @@
             listContainer.innerHTML = html;
         }
 
-        // Xem chi tiết bài học
+        // Khi học sinh click vào từng khóa học để xem nội dung bài giảng
         function selectCourse(courseId) {
             currentCourseId = courseId;
             renderCourses();
@@ -129,6 +130,7 @@
             container.innerHTML = html;
         }
 
+        // Tự động chạy khi mở web
         window.onload = loadDataFromCloud;
     </script>
 </body>
