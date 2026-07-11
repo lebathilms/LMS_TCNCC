@@ -6,30 +6,34 @@
     <title>Hệ thống LMS & Khảo thí Đám mây - Trường TCN Củ Chi</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
+        body { background-color: #f8f9fa; }
         .list-group-item.active small { color: rgba(255,255,255,0.8) !important; }
         .style-desc { font-size: 0.85rem; margin-top: 4px; }
         .nav-tabs .nav-link { cursor: pointer; font-weight: bold; }
         
-        /* Giao diện giống Phiếu Trả Lời Trắc Nghiệm */
-        .phieu-container { border: 2px dashed #dc3545; padding: 20px; border-radius: 8px; background-color: #fffdfd; }
-        .section-title { background-color: #dc3545; color: white; padding: 6px 12px; font-weight: bold; font-size: 1rem; border-radius: 4px; margin-bottom: 15px; margin-top: 20px; }
+        /* Giao diện Phiếu Trắc Nghiệm */
+        .phieu-container { border: 2px dashed #dc3545; padding: 20px; border-radius: 8px; background-color: #fffdfd; margin-top: 15px; }
+        .section-title { background-color: #dc3545; color: white; padding: 8px 15px; font-weight: bold; font-size: 1rem; border-radius: 4px; margin-bottom: 20px; margin-top: 25px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         
-        /* Phần I: 4 lựa chọn nằm ngang gọn gàng */
-        .opt-grid { display: flex; gap: 10px; margin-top: 8px; }
+        /* Phần I: 4 lựa chọn */
+        .opt-grid { display: flex; gap: 10px; margin-top: 10px; }
         .opt-box { flex: 1; border: 1px solid #ced4da; padding: 8px; text-align: center; border-radius: 5px; cursor: pointer; transition: 0.2s; font-weight: bold; background-color: white; }
         .opt-box:hover { background-color: #f8d7da; }
-        .opt-box.selected { background-color: #dc3545; color: white; border-color: #dc3545; }
+        .opt-box.selected { background-color: #dc3545; color: white; border-color: #dc3545; box-shadow: 0 2px 5px rgba(220,53,69,0.4); }
         
         /* Phần II: Đúng Sai */
-        .tf-row { border-bottom: 1px solid #eee; padding: 8px 0; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-        .tf-btn { width: 65px; padding: 4px; text-align: center; border: 1px solid #ced4da; border-radius: 4px; cursor: pointer; display: inline-block; font-size: 0.85rem; font-weight: bold; background-color: white; }
-        .tf-btn.selected-true { background-color: #198754; color: white; border-color: #198754; }
-        .tf-btn.selected-false { background-color: #dc3545; color: white; border-color: #dc3545; }
+        .tf-row { border-bottom: 1px dashed #dee2e6; padding: 10px 0; display: flex; align-items: center; justify-content: space-between; gap: 15px; }
+        .tf-row:last-child { border-bottom: none; }
+        .tf-btn { min-width: 65px; padding: 5px; text-align: center; border: 1px solid #ced4da; border-radius: 4px; cursor: pointer; display: inline-block; font-size: 0.85rem; font-weight: bold; background-color: white; transition: 0.2s; }
+        .tf-btn:hover { background-color: #e9ecef; }
+        .tf-btn.selected-true { background-color: #198754; color: white; border-color: #198754; box-shadow: 0 2px 5px rgba(25,135,84,0.4); }
+        .tf-btn.selected-false { background-color: #dc3545; color: white; border-color: #dc3545; box-shadow: 0 2px 5px rgba(220,53,69,0.4); }
         
-        /* ... Phần III: Điền số ... */
-        .num-fill-box { width: 100%; max-width: 150px; text-align: center; font-weight: bold; font-size: 1.2rem; color: #0d6efd; border: 2px solid #0d6efd; }
+        /* Phần III: Điền số */
+        .num-fill-box { width: 100%; max-width: 150px; text-align: center; font-weight: bold; font-size: 1.2rem; color: #0d6efd; border: 2px solid #0d6efd; background-color: #f8f9fa; }
+        .num-fill-box:focus { background-color: white; box-shadow: none; border-color: #0b5ed7; }
         
-        #countdown-timer { font-size: 1.4rem; font-weight: bold; color: #dc3545; background: #fff5f5; padding: 8px 15px; border-radius: 8px; border: 1px solid #feb2b2; }
+        #countdown-timer { font-size: 1.5rem; font-weight: bold; color: #dc3545; background: #fff5f5; padding: 8px 20px; border-radius: 8px; border: 1px solid #feb2b2; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
     </style>
 </head>
 <body>
@@ -38,11 +42,14 @@
         <p class="text-center text-muted mb-4">Trường Trung cấp nghề Củ Chi - Đồng bộ dữ liệu Thực tế</p>
         
         <div class="row mt-4">
+            <!-- Cột trái: Danh mục -->
             <div class="col-md-4">
-                <div class="list-group shadow-sm mb-4">
-                    <h5 class="p-3 bg-dark text-white border rounded-top m-0">Danh mục môn học</h5>
+                <div class="list-group shadow-sm mb-4 bg-white rounded">
+                    <h5 class="p-3 bg-dark text-white border rounded-top m-0 fw-bold">Danh mục môn học</h5>
                     <div id="course-list">
-                        <div class="p-3 text-center text-muted">Đang kết nối đám mây Google...</div>
+                        <div class="p-4 text-center text-primary fw-bold spinner-border-container">
+                            ⏳ Đang tải dữ liệu từ Google Sheets...
+                        </div>
                     </div>
                 </div>
 
@@ -50,8 +57,8 @@
                     <h5 class="card-header bg-primary text-white fw-bold">🔍 Tra cứu điểm thi</h5>
                     <div class="card-body">
                         <div class="mb-3">
-                            <input type="text" id="search_student_name" class="form-control mb-2" placeholder="Nhập tên học sinh...">
-                            <input type="text" id="search_student_class" class="form-control" placeholder="Nhập lớp...">
+                            <input type="text" id="search_student_name" class="form-control mb-2" placeholder="Nhập họ và tên...">
+                            <input type="text" id="search_student_class" class="form-control" placeholder="Nhập lớp (VD: ĐT24)...">
                         </div>
                         <button onclick="lookupResults()" class="btn btn-outline-primary w-100 fw-bold">Xem lịch sử thi</button>
                         <div id="lookup-output" class="mt-3" style="max-height: 250px; overflow-y: auto;"></div>
@@ -59,16 +66,17 @@
                 </div>
             </div>
 
+            <!-- Cột phải: Nội dung -->
             <div class="col-md-8">
                 <ul class="nav nav-tabs mb-3" id="contentTabs" style="display: none;">
-                    <li class="nav-item"><a class="nav-link active" id="tab-lessons" onclick="switchTab('lessons')">📚 Lý thuyết</a></li>
+                    <li class="nav-item"><a class="nav-link active" id="tab-lessons" onclick="switchTab('lessons')">📚 Bài học Lý thuyết</a></li>
                     <li class="nav-item"><a class="nav-link text-danger" id="tab-quiz" onclick="switchTab('quiz')">📝 Phòng thi trắc nghiệm (3 Phần)</a></li>
                 </ul>
 
-                <div id="main-content-container">
-                    <div class="alert alert-info text-center p-5 shadow-sm">
-                        <h4 class="alert-heading">Chào Thầy và các em!</h4>
-                        <p class="m-0">Vui lòng chọn môn học ở danh mục bên trái để hiển thị giao diện học liệu.</p>
+                <div id="main-content-container" class="bg-white p-4 rounded shadow-sm" style="min-height: 400px;">
+                    <div class="alert alert-info text-center p-5">
+                        <h4 class="alert-heading fw-bold">Chào Thầy và các em học sinh!</h4>
+                        <p class="m-0 fs-5 mt-3">Vui lòng chọn một môn học ở danh mục bên trái để bắt đầu.</p>
                     </div>
                 </div>
             </div>
@@ -84,74 +92,86 @@
         let currentTab = 'lessons'; let timerInterval = null;
         let currentStudentName = ""; let currentStudentClass = "";
 
-        // Bộ lưu trữ dữ liệu làm bài thực tế từ Sheets
         let selectedPart1 = []; let selectedPart2 = []; let selectedPart3 = [];
         let studentAnswers = { part1: {}, part2: {}, part3: {} };
 
-    
-    function parseCSV(text) {
-    // Xóa ký tự BOM (Byte Order Mark) ẩn ở đầu file do Google Sheets sinh ra
-    text = text.replace(/^\uFEFF/, '');
-    
-    let lines = []; let row = [""]; let inQuotes = false;
-    for (let i = 0; i < text.length; i++) {
-        let c = text[i]; let next = text[i+1];
-        if (c === '"') {
-            if (inQuotes && next === '"') { row[row.length - 1] += '"'; i++; }
-            else { inQuotes = !inQuotes; }
-        } else if (c === ',' && !inQuotes) { row.push(''); }
-        else if ((c === '\r' || c === '\n') && !inQuotes) {
-            if (c === '\r' && next === '\n') { i++; }
-            lines.push(row); row = [''];
-        } else { row[row.length - 1] += c; }
-    }
-    if (row.length > 1 || row[0] !== '') lines.push(row);
-    
-    // Chuẩn hóa Header: xóa khoảng trắng và in thường để tránh lỗi bắt sai tên cột
-    const headers = lines[0].map(h => h.trim().toLowerCase());
-    
-    return lines.slice(1).map(line => {
-        const obj = {}; 
-        headers.forEach((header, index) => { 
-            obj[header] = line[index] ? line[index].trim() : ''; 
-        });
-        return obj;
-    });
-}
-
-function renderCourses() {
-    const listContainer = document.getElementById('course-list');
-    if (allCourses.length === 0) { listContainer.innerHTML = '<div class="p-3 text-center text-muted">Chưa có dữ liệu môn học.</div>'; return; }
-    let html = '';
-    allCourses.forEach(course => {
-        const activeClass = currentCourseId == course.id ? 'active' : '';
-        // Bọc course.id trong dấu nháy đơn để bảo vệ giá trị truyền vào hàm không bị undefined
-        html += `<button onclick="selectCourse('${course.id}')" class="list-group-item list-group-item-action p-3 ${activeClass}"><h6 class="mb-1 fw-bold">${course.title}</h6><small class="d-block style-desc">${course.description || ''}</small></button>`;
-    });
-    listContainer.innerHTML = html;
-}
+        // Hàm đọc CSV siêu chống lỗi (Loại bỏ BOM, khoảng trắng, đồng bộ chữ thường)
+        function parseCSV(text) {
+            text = text.replace(/^\uFEFF/, '');
+            let lines = []; let row = [""]; let inQuotes = false;
+            for (let i = 0; i < text.length; i++) {
+                let c = text[i]; let next = text[i+1];
+                if (c === '"') {
+                    if (inQuotes && next === '"') { row[row.length - 1] += '"'; i++; }
+                    else { inQuotes = !inQuotes; }
+                } else if (c === ',' && !inQuotes) { row.push(''); }
+                else if ((c === '\r' || c === '\n') && !inQuotes) {
+                    if (c === '\r' && next === '\n') { i++; }
+                    if (row.length > 1 || row[0] !== '') { lines.push(row); }
+                    row = [''];
+                } else { row[row.length - 1] += c; }
+            }
+            if (row.length > 1 || row[0] !== '') lines.push(row);
+            
+            if (lines.length === 0) return [];
+            const headers = lines[0].map(h => h.trim().toLowerCase());
+            
+            return lines.slice(1).map(line => {
+                const obj = {}; 
+                headers.forEach((header, index) => { 
+                    obj[header] = line[index] ? line[index].trim() : ''; 
+                });
+                return obj;
+            });
+        }
 
         async function loadDataFromCloud() {
             try {
                 const resCourses = await fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=courses`);
                 allCourses = parseCSV(await resCourses.text());
+                
                 const resLessons = await fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=lessons`);
                 allLessons = parseCSV(await resLessons.text());
+                
                 const resQuestions = await fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=quiz_questions`);
                 allQuestions = parseCSV(await resQuestions.text());
+                
                 renderCourses();
             } catch (err) {
-                document.getElementById('course-list').innerHTML = `<div class="p-3 text-danger">Lỗi đám mây: ${err.message}</div>`;
+                document.getElementById('course-list').innerHTML = `<div class="p-3 text-danger fw-bold text-center">❌ Lỗi kết nối đám mây: ${err.message}</div>`;
             }
         }
 
+        function renderCourses() {
+            const listContainer = document.getElementById('course-list');
+            if (allCourses.length === 0) { listContainer.innerHTML = '<div class="p-3 text-center text-muted">Chưa có dữ liệu môn học.</div>'; return; }
+            let html = '';
+            allCourses.forEach(course => {
+                let cid = String(course.id || "").trim();
+                const activeClass = currentCourseId === cid ? 'active' : '';
+                html += `<button onclick="selectCourse('${cid}')" class="list-group-item list-group-item-action p-3 ${activeClass}"><h6 class="mb-1 fw-bold">${course.title || 'Không tên'}</h6><small class="d-block style-desc">${course.description || ''}</small></button>`;
+            });
+            listContainer.innerHTML = html;
+        }
+
         function selectCourse(courseId) {
-            clearInterval(timerInterval); 
-            currentCourseId = courseId;
-            currentCourseObj = allCourses.find(c => c.id == courseId);
-            renderCourses();
-            document.getElementById('contentTabs').style.display = 'flex'; 
-            updateDisplay();
+            try {
+                clearInterval(timerInterval); 
+                currentCourseId = String(courseId).trim();
+                currentCourseObj = allCourses.find(c => String(c.id).trim() === currentCourseId);
+                
+                if(!currentCourseObj && allCourses.length > 0) {
+                    currentCourseObj = allCourses[0];
+                    currentCourseId = String(currentCourseObj.id).trim();
+                }
+
+                renderCourses();
+                document.getElementById('contentTabs').style.display = 'flex'; 
+                updateDisplay();
+            } catch (e) {
+                console.error("Lỗi khi chọn môn:", e);
+                alert("Hệ thống gặp sự cố nhẹ, vui lòng tải lại trang (F5)!");
+            }
         }
 
         function switchTab(tabName) {
@@ -161,154 +181,203 @@ function renderCourses() {
             updateDisplay();
         }
 
-        // VÁ LỖI HIỂN THỊ LÝ THUYẾT: Chuyển toàn bộ dấu \n thành xuống dòng thực thụ
+        function updateDisplay() {
+            if (!currentCourseId || !currentCourseObj) return;
+            if (currentTab === 'lessons') { renderLessons(); } 
+            else if (currentTab === 'quiz') { renderQuizPrepare(); }
+        }
+
+        // Tự động bảo vệ lỗi undefined và xử lý \n chuẩn xác
         function renderLessons() {
-            const container = document.getElementById('main-content-container');
-            const filteredLessons = allLessons.filter(l => l.course_id == currentCourseId);
-            let html = `<h5 class="mb-3 text-secondary border-bottom pb-2">Bài học: <span class="text-primary">${currentCourseObj.title}</span></h5>`;
-            
-            if (filteredLessons.length === 0) {
-                html += '<div class="alert alert-warning">Môn học này hiện chưa cập nhật bài học lý thuyết.</div>';
-            } else {
-                filteredLessons.forEach(lesson => {
-                    let cleanContent = lesson.content.replace(/\\\\n/g, '\n').replace(/\\n/g, '\n');
-                    html += `
-                        <div class="card mb-3 shadow-sm border-start border-success border-4">
-                            <div class="card-body">
-                                <h5 class="card-title text-success fw-bold">${lesson.title}</h5>
-                                <hr class="my-2 text-muted">
-                                <p class="card-text text-dark" style="white-space: pre-line; line-height: 1.6;">${cleanContent}</p>
+            try {
+                const container = document.getElementById('main-content-container');
+                const filteredLessons = allLessons.filter(l => String(l.course_id).trim() === currentCourseId);
+                
+                let html = `<h5 class="mb-4 text-secondary border-bottom pb-3 fw-bold">Nội dung bài học: <span class="text-primary">${currentCourseObj.title}</span></h5>`;
+                
+                if (filteredLessons.length === 0) {
+                    html += '<div class="alert alert-warning shadow-sm">Môn học này hiện chưa cập nhật bài học lý thuyết.</div>';
+                } else {
+                    filteredLessons.forEach(lesson => {
+                        let contentRaw = lesson.content || "";
+                        // Xử lý dấu xuống dòng an toàn tuyệt đối
+                        let cleanContent = contentRaw.replace(/\\\\n/g, '\n').replace(/\\n/g, '\n');
+                        
+                        html += `
+                            <div class="card mb-4 shadow-sm border-0 border-start border-success border-4">
+                                <div class="card-body p-4">
+                                    <h5 class="card-title text-success fw-bold fs-4 mb-3">${lesson.title || 'Bài học'}</h5>
+                                    <p class="card-text text-dark" style="white-space: pre-line; line-height: 1.8; font-size: 1.05rem;">${cleanContent}</p>
+                                </div>
                             </div>
-                        </div>
-                    `;
-                });
+                        `;
+                    });
+                }
+                container.innerHTML = html;
+            } catch (error) {
+                document.getElementById('main-content-container').innerHTML = `<div class="alert alert-danger">Lỗi hiển thị: ${error.message}</div>`;
             }
-            container.innerHTML = html;
         }
 
         function renderQuizPrepare() {
-            const container = document.getElementById('main-content-container');
-            const filteredQuestions = allQuestions.filter(q => q.course_id == currentCourseId);
-            
-            let html = `<h5 class="mb-3 border-bottom pb-2 text-danger fw-bold">PHÒNG KHẢO THÍ - MÔN ${currentCourseObj.title}</h5>`;
-            if (filteredQuestions.length === 0) {
-                html += '<div class="alert alert-warning">Môn học này hiện chưa có câu hỏi trong ngân hàng đề thi.</div>';
-                container.innerHTML = html; return;
-            }
+            try {
+                const container = document.getElementById('main-content-container');
+                const filteredQuestions = allQuestions.filter(q => String(q.course_id).trim() === currentCourseId);
+                
+                let html = `<h5 class="mb-4 border-bottom pb-3 text-danger fw-bold text-center">PHÒNG KHẢO THÍ - MÔN: ${currentCourseObj.title.toUpperCase()}</h5>`;
+                if (filteredQuestions.length === 0) {
+                    html += '<div class="alert alert-warning shadow-sm text-center">Ngân hàng đề thi môn này đang được cập nhật.</div>';
+                    container.innerHTML = html; return;
+                }
 
-            html += `
-                <div class="card shadow-sm p-4 border-danger">
-                    <div class="row g-3 text-start mb-4" style="max-width: 500px; margin: 0 auto;">
-                        <div class="col-12"><label class="form-label fw-bold">Họ và Tên thí sinh:</label><input type="text" id="student_name" class="form-control" required></div>
-                        <div class="col-12"><label class="form-label fw-bold">Lớp:</label><input type="text" id="student_class" class="form-control" required></div>
+                html += `
+                    <div class="card shadow p-5 border-0 bg-light rounded-4">
+                        <h4 class="text-center text-dark fw-bold mb-4">ĐIỀN THÔNG TIN THÍ SINH</h4>
+                        <div class="row g-4 text-start" style="max-width: 500px; margin: 0 auto;">
+                            <div class="col-12">
+                                <label class="form-label fw-bold text-secondary">Họ và Tên thí sinh:</label>
+                                <input type="text" id="student_name" class="form-control form-control-lg border-primary" placeholder="Nhập đầy đủ họ tên..." required>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-bold text-secondary">Lớp:</label>
+                                <input type="text" id="student_class" class="form-control form-control-lg border-primary" placeholder="VD: ĐT24..." required>
+                            </div>
+                        </div>
+                        <div class="text-center mt-5">
+                            <button onclick="startDigitalExam()" class="btn btn-danger btn-lg px-5 py-3 fw-bold shadow rounded-pill fs-5">🚀 Bắt Đầu Làm Bài Ngay</button>
+                        </div>
                     </div>
-                    <div class="text-center"><button onclick="startDigitalExam()" class="btn btn-danger btn-lg px-5 fw-bold shadow">🚀 Bắt Đầu Làm Bài</button></div>
-                </div>
-            `;
-            container.innerHTML = html;
+                `;
+                container.innerHTML = html;
+            } catch (error) {
+                document.getElementById('main-content-container').innerHTML = `<div class="alert alert-danger">Lỗi phòng thi: ${error.message}</div>`;
+            }
         }
 
         function startDigitalExam() {
-            const name = document.getElementById('student_name').value.trim();
-            const sClass = document.getElementById('student_class').value.trim();
-            if(!name || !sClass) { alert("Vui lòng nhập Họ tên và Lớp!"); return; }
-            
-            currentStudentName = name;
-            currentStudentClass = sClass;
-            studentAnswers = { part1: {}, part2: {}, part3: {} };
+            try {
+                const name = document.getElementById('student_name').value.trim();
+                const sClass = document.getElementById('student_class').value.trim();
+                if(!name || !sClass) { alert("Vui lòng nhập đủ Họ tên và Lớp trước khi thi!"); return; }
+                
+                currentStudentName = name;
+                currentStudentClass = sClass;
+                studentAnswers = { part1: {}, part2: {}, part3: {} };
 
-            // Phân loại câu hỏi thực tế từ Google Sheets của môn học này
-            const courseQuestions = allQuestions.filter(q => q.course_id == currentCourseId);
-            
-            // Nếu cột part trống, mặc định xếp vào phần 1
-            selectedPart1 = courseQuestions.filter(q => q.part == '1' || q.part == '');
-            selectedPart2 = courseQuestions.filter(q => q.part == '2');
-            selectedPart3 = courseQuestions.filter(q => q.part == '3');
+                const courseQuestions = allQuestions.filter(q => String(q.course_id).trim() === currentCourseId);
+                
+                // Phân loại 3 phần an toàn
+                selectedPart1 = courseQuestions.filter(q => { let p = String(q.part || "").trim(); return p === '1' || p === ''; });
+                selectedPart2 = courseQuestions.filter(q => String(q.part || "").trim() === '2');
+                selectedPart3 = courseQuestions.filter(q => String(q.part || "").trim() === '3');
 
-            let timeRemaining = (parseInt(currentCourseObj.quiz_time) || 15) * 60;
-            const container = document.getElementById('main-content-container');
-            
-            let html = `
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="text-danger fw-bold m-0">MÔN THI: ${currentCourseObj.title}</h5>
-                    <div id="countdown-timer">⏰ 15:00</div>
-                </div>
-                <div class="alert alert-secondary py-2">Thí sinh: <strong>${currentStudentName}</strong> - Lớp: <strong>${currentStudentClass}</strong></div>
-                <div class="phieu-container shadow">
-                    <h4 class="text-center fw-bold text-danger mb-4">PHIẾU TRẢ LỜI TRẮC NGHIỆM ĐIỆN TỬ</h4>
-            `;
+                let timeRemaining = (parseInt(currentCourseObj.quiz_time) || 15) * 60;
+                const container = document.getElementById('main-content-container');
+                
+                let html = `
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="text-danger fw-bold m-0 fs-4">MÔN THI: ${currentCourseObj.title}</h5>
+                        <div id="countdown-timer">⏰ 15:00</div>
+                    </div>
+                    <div class="alert alert-secondary py-3 fs-5 border-0 shadow-sm rounded-3">
+                        Thí sinh: <strong class="text-primary">${currentStudentName}</strong> &nbsp;|&nbsp; Lớp: <strong class="text-primary">${currentStudentClass}</strong>
+                    </div>
+                    <div class="phieu-container shadow-lg">
+                        <h3 class="text-center fw-bold text-danger mb-2">PHIẾU TRẢ LỜI TRẮC NGHIỆM ĐIỆN TỬ</h3>
+                        <p class="text-center text-muted fw-bold mb-4">(Theo định dạng chuẩn 3 Phần)</p>
+                `;
 
-            // ĐỔ DỮ LIỆU PHẦN I THỰC TẾ
-            if(selectedPart1.length > 0) {
-                html += `<div class="section-title">PHẦN I. Câu trắc nghiệm nhiều lựa chọn (Chọn 1 đáp án đúng)</div><div class="row row-cols-1 g-3 mb-4">`;
-                selectedPart1.forEach((q, idx) => {
-                    html += `
-                        <div class="col border-bottom pb-2 bg-white p-2 rounded">
-                            <div class="fw-bold">Câu ${idx + 1}: ${q.question}</div>
-                            <div class="text-muted small mt-1">A. ${q.option_a} | B. ${q.option_b} | C. ${q.option_c} | D. ${q.option_d}</div>
-                            <div class="opt-grid" style="max-width: 350px;">
-                                ${['A','B','C','D'].map(opt => `<div id="p1_${q.id}_${opt}" onclick="selectPart1(${q.id},'${opt}')" class="opt-box">${opt}</div>`).join('')}
-                            </div>
-                        </div>`;
-                });
-                html += `</div>`;
-            }
-
-            // ĐỔ DỮ LIỆU PHẦN II THỰC TẾ
-            if(selectedPart2.length > 0) {
-                html += `<div class="section-title">PHẦN II. Câu trắc nghiệm Đúng/Sai (Mỗi câu chọn Đúng/Sai cho từng ý)</div><div class="row g-3 mb-4">`;
-                selectedPart2.forEach((q, idx) => {
-                    // Tách các ý con qua ký tự xuống dòng
-                    let subOptions = q.question.replace(/\\\\n/g, '\n').replace(/\\n/g, '\n').split('\n');
-                    let titleQ = subOptions[0];
-                    html += `
-                        <div class="col-12 border p-3 rounded bg-white">
-                            <div class="fw-bold text-primary mb-2">Câu ${idx + 1}: ${titleQ}</div>`;
-                    
-                    for(let i = 1; i < subOptions.length; i++) {
-                        if(!subOptions[i].trim()) continue;
-                        let subChar = String.fromCharCode(96 + i); // a, b, c, d
+                // Render Phần I
+                if(selectedPart1.length > 0) {
+                    html += `<div class="section-title">PHẦN I. Câu trắc nghiệm nhiều lựa chọn (Chọn 1 đáp án đúng)</div><div class="row row-cols-1 g-4 mb-4">`;
+                    selectedPart1.forEach((q, idx) => {
                         html += `
-                            <div class="tf-row">
-                                <span>${subOptions[i]}</span>
-                                <div class="text-nowrap">
-                                    <span id="p2_${q.id}_${subChar}_Đ" onclick="selectPart2('${q.id}_${subChar}', 'Đ')" class="tf-btn me-1">Đúng</span>
-                                    <span id="p2_${q.id}_${subChar}_S" onclick="selectPart2('${q.id}_${subChar}', 'S')" class="tf-btn">Sai</span>
+                            <div class="col border-bottom pb-4 bg-white p-3 rounded">
+                                <div class="fw-bold fs-5 mb-2"><span class="text-danger">Câu ${idx + 1}:</span> ${q.question || ""}</div>
+                                <div class="text-dark mb-3 ps-3">
+                                    <div><strong>A.</strong> ${q.option_a || ""}</div>
+                                    <div><strong>B.</strong> ${q.option_b || ""}</div>
+                                    <div><strong>C.</strong> ${q.option_c || ""}</div>
+                                    <div><strong>D.</strong> ${q.option_d || ""}</div>
+                                </div>
+                                <div class="opt-grid" style="max-width: 400px; margin: 0 auto;">
+                                    ${['A','B','C','D'].map(opt => `<div id="p1_${q.id}_${opt}" onclick="selectPart1('${q.id}','${opt}')" class="opt-box fs-5">${opt}</div>`).join('')}
                                 </div>
                             </div>`;
-                    }
+                    });
                     html += `</div>`;
-                });
-                html += `</div>`;
-            }
+                }
 
-            // ĐỔ DỮ LIỆU PHẦN III THỰC TẾ
-            if(selectedPart3.length > 0) {
-                html += `<div class="section-title">PHẦN III. Câu trắc nghiệm trả lời ngắn (Điền đáp án số)</div><div class="row g-3 mb-4">`;
-                selectedPart3.forEach((q, idx) => {
-                    html += `
-                        <div class="col-12 d-flex align-items-center justify-content-between border p-2 rounded bg-white">
-                            <span class="fw-bold">Câu ${idx + 1}: ${q.question}</span>
-                            <input type="text" oninput="savePart3(${q.id}, this.value)" class="form-control num-fill-box" placeholder="Nhập số...">
-                        </div>`;
-                });
-                html += `</div>`;
-            }
+                // Render Phần II
+                if(selectedPart2.length > 0) {
+                    html += `<div class="section-title">PHẦN II. Câu trắc nghiệm Đúng/Sai (Mỗi câu chọn Đúng/Sai cho từng ý)</div><div class="row g-4 mb-4">`;
+                    selectedPart2.forEach((q, idx) => {
+                        let subOptions = (q.question || "").replace(/\\\\n/g, '\n').replace(/\\n/g, '\n').split('\n');
+                        let titleQ = subOptions[0];
+                        html += `
+                            <div class="col-12 border p-4 rounded bg-white shadow-sm">
+                                <div class="fw-bold text-primary fs-5 mb-3">Câu ${idx + 1}: ${titleQ}</div>`;
+                        
+                        if(subOptions.length > 1) {
+                            // Trường hợp 1 câu có 4 ý a,b,c,d
+                            for(let i = 1; i < subOptions.length; i++) {
+                                if(!subOptions[i].trim()) continue;
+                                let subChar = String.fromCharCode(96 + i); // a, b, c, d
+                                html += `
+                                    <div class="tf-row">
+                                        <span class="fs-6">${subOptions[i]}</span>
+                                        <div class="text-nowrap ms-3">
+                                            <span id="p2_${q.id}_${subChar}_Đ" onclick="selectPart2('${q.id}_${subChar}', 'Đ')" class="tf-btn me-2">Đúng</span>
+                                            <span id="p2_${q.id}_${subChar}_S" onclick="selectPart2('${q.id}_${subChar}', 'S')" class="tf-btn">Sai</span>
+                                        </div>
+                                    </div>`;
+                            }
+                        } else {
+                            // Trường hợp câu chỉ có 1 nhận định Đ/S độc lập
+                            html += `
+                                <div class="tf-row">
+                                    <span class="fs-6 text-muted">Vui lòng chọn Đúng hoặc Sai cho nhận định trên:</span>
+                                    <div class="text-nowrap ms-3">
+                                        <span id="p2_${q.id}_Đ" onclick="selectPart2('${q.id}', 'Đ')" class="tf-btn me-2">Đúng</span>
+                                        <span id="p2_${q.id}_S" onclick="selectPart2('${q.id}', 'S')" class="tf-btn">Sai</span>
+                                    </div>
+                                </div>`;
+                        }
+                        html += `</div>`;
+                    });
+                    html += `</div>`;
+                }
 
-            html += `
-                    <div class="text-center mt-4">
-                        <button onclick="submitPhieuExam()" class="btn btn-primary btn-lg px-5 fw-bold shadow">💾 NỘP PHIẾU LÀM BÀI</button>
+                // Render Phần III
+                if(selectedPart3.length > 0) {
+                    html += `<div class="section-title">PHẦN III. Câu trắc nghiệm trả lời ngắn (Điền từ khóa/số)</div><div class="row g-4 mb-4">`;
+                    selectedPart3.forEach((q, idx) => {
+                        html += `
+                            <div class="col-12 d-flex flex-column flex-md-row align-items-md-center justify-content-between border p-4 rounded bg-white shadow-sm">
+                                <span class="fw-bold fs-5 mb-3 mb-md-0 me-md-4 text-dark"><span class="text-success">Câu ${idx + 1}:</span> ${q.question || ""}</span>
+                                <input type="text" oninput="savePart3('${q.id}', this.value)" class="form-control num-fill-box py-2" placeholder="Nhập đáp án...">
+                            </div>`;
+                    });
+                    html += `</div>`;
+                }
+
+                html += `
+                        <div class="text-center mt-5 mb-3">
+                            <button onclick="submitPhieuExam()" class="btn btn-primary btn-lg px-5 py-3 fw-bold shadow rounded-pill fs-5">💾 KẾT THÚC & NỘP BÀI THI</button>
+                        </div>
                     </div>
-                </div>
-            `;
-            container.innerHTML = html;
+                `;
+                container.innerHTML = html;
 
-            timerInterval = setInterval(() => {
-                timeRemaining--;
-                let mins = Math.floor(timeRemaining / 60); let secs = timeRemaining % 60;
-                document.getElementById('countdown-timer').innerText = `⏰ ${mins}:${secs < 10 ? '0' : ''}${secs}`;
-                if (timeRemaining <= 0) { clearInterval(timerInterval); submitPhieuExam(); }
-            }, 1000);
+                timerInterval = setInterval(() => {
+                    timeRemaining--;
+                    let mins = Math.floor(timeRemaining / 60); let secs = timeRemaining % 60;
+                    document.getElementById('countdown-timer').innerText = `⏰ ${mins}:${secs < 10 ? '0' : ''}${secs}`;
+                    if (timeRemaining <= 0) { clearInterval(timerInterval); submitPhieuExam(); }
+                }, 1000);
+            } catch (error) {
+                document.getElementById('main-content-container').innerHTML = `<div class="alert alert-danger">Lỗi khởi tạo đề thi: ${error.message}</div>`;
+            }
         }
 
         function selectPart1(qid, opt) {
@@ -316,42 +385,58 @@ function renderCourses() {
                 const el = document.getElementById(`p1_${qid}_${o}`);
                 if(el) el.classList.remove('selected');
             });
-            document.getElementById(`p1_${qid}_${opt}`).classList.add('selected');
+            const target = document.getElementById(`p1_${qid}_${opt}`);
+            if(target) target.classList.add('selected');
             studentAnswers.part1[qid] = opt;
         }
 
         function selectPart2(key, val) {
-            document.getElementById(`p2_${key}_Đ`).classList.remove('selected-true');
-            document.getElementById(`p2_${key}_S`).classList.remove('selected-false');
-            if(val === 'Đ') document.getElementById(`p2_${key}_Đ`).classList.add('selected-true');
-            else document.getElementById(`p2_${key}_S`).classList.add('selected-false');
+            const btnTrue = document.getElementById(`p2_${key}_Đ`);
+            const btnFalse = document.getElementById(`p2_${key}_S`);
+            if(btnTrue) btnTrue.classList.remove('selected-true');
+            if(btnFalse) btnFalse.classList.remove('selected-false');
+            
+            if(val === 'Đ' && btnTrue) btnTrue.classList.add('selected-true');
+            else if (val === 'S' && btnFalse) btnFalse.classList.add('selected-false');
+            
             studentAnswers.part2[key] = val;
         }
 
         function savePart3(qid, val) {
-            studentAnswers.part3[qid] = val.trim();
+            studentAnswers.part3[qid] = String(val).trim();
         }
 
         function submitPhieuExam() {
+            if(!confirm("Bạn có chắc chắn muốn nộp phiếu làm bài?")) return;
             clearInterval(timerInterval);
             
-            // Chấm điểm thực tế dựa trên cột answer trong file của anh
             let p1Correct = 0; let p2Correct = 0; let p3Correct = 0;
             
-            selectedPart1.forEach(q => { if(studentAnswers.part1[q.id] === q.answer.trim().toUpperCase()) p1Correct++; });
-            
-            selectedPart2.forEach(q => {
-                let ansArray = q.answer.split('|'); // Giả định đáp án đúng/sai phân tách bằng dấu gạch đứng (Ví dụ: Đ|S|Đ|S)
-                ansArray.forEach((ans, index) => {
-                    let subChar = String.fromCharCode(97 + index);
-                    if(studentAnswers.part2[`${q.id}_${subChar}`] === ans.trim()) p2Correct++;
-                });
+            selectedPart1.forEach(q => { 
+                let ans = String(q.answer || "").trim().toUpperCase();
+                if(studentAnswers.part1[q.id] === ans) p1Correct++; 
             });
             
-            selectedPart3.forEach(q => { if(studentAnswers.part3[q.id] === q.answer.trim()) p3Correct++; });
+            selectedPart2.forEach(q => {
+                let ansArray = String(q.answer || "").split('|');
+                if(ansArray.length > 1) {
+                    ansArray.forEach((ans, index) => {
+                        let subChar = String.fromCharCode(97 + index);
+                        if(studentAnswers.part2[`${q.id}_${subChar}`] === ans.trim().toUpperCase()) p2Correct++;
+                    });
+                } else {
+                    if(studentAnswers.part2[q.id] === ansArray[0].trim().toUpperCase()) p2Correct++;
+                }
+            });
+            
+            selectedPart3.forEach(q => { 
+                let ans = String(q.answer || "").trim().toUpperCase();
+                let userAns = String(studentAnswers.part3[q.id] || "").trim().toUpperCase();
+                if(userAns === ans && userAns !== "") p3Correct++; 
+            });
 
-            // Trọng số điểm chia đều tự động
-            let totalQuestions = selectedPart1.length + (selectedPart2.length * 4) + selectedPart3.length;
+            let totalQuestions = selectedPart1.length + (selectedPart2.length > 0 ? selectedPart2.reduce((acc, q) => acc + Math.max(1, String(q.answer).split('|').length), 0) : 0) + selectedPart3.length;
+            
             let finalScore = 0;
             if(totalQuestions > 0) {
                 let totalCorrect = p1Correct + p2Correct + p3Correct;
@@ -360,33 +445,47 @@ function renderCourses() {
 
             const container = document.getElementById('main-content-container');
             container.innerHTML = `
-                <div class="card shadow p-4 text-center">
-                    <h3 class="text-success fw-bold">HOÀN THÀNH BÀI THI</h3>
-                    <p class="fs-4">Thí sinh: <strong>${currentStudentName.toUpperCase()}</strong> - Điểm số: <strong class="text-primary display-6">${finalScore.toFixed(2)}</strong></p>
-                    <hr>
-                    <button onclick="exportStructuredExcel('${finalScore.toFixed(2)}')" class="btn btn-success btn-lg fw-bold px-4 shadow">📥 TẢI FILE EXCEL CHIA CỘT CHUẨN</button>
+                <div class="card shadow p-5 border-0 text-center rounded-4 mt-4">
+                    <h2 class="text-success fw-bold mb-4">🎉 HOÀN THÀNH BÀI THI</h2>
+                    <p class="fs-4 text-muted">Thí sinh: <strong class="text-dark">${currentStudentName.toUpperCase()}</strong></p>
+                    <p class="fs-4 text-muted mb-4">Lớp: <strong class="text-dark">${currentStudentClass.toUpperCase()}</strong></p>
+                    
+                    <div class="display-3 fw-bold text-primary mb-4 border py-4 bg-light rounded-4">
+                        ${finalScore.toFixed(2)} <span class="fs-4 text-muted">Điểm</span>
+                    </div>
+                    
+                    <div class="d-flex justify-content-center gap-3 mb-5">
+                        <span class="badge bg-success fs-6 p-2">Phần I: ${p1Correct} ý đúng</span>
+                        <span class="badge bg-danger fs-6 p-2">Phần II: ${p2Correct} ý đúng</span>
+                        <span class="badge bg-info text-dark fs-6 p-2">Phần III: ${p3Correct} ý đúng</span>
+                    </div>
+
+                    <button onclick="exportStructuredExcel('${finalScore.toFixed(2)}')" class="btn btn-success btn-lg fw-bold px-5 py-3 shadow rounded-pill">
+                        📥 TẢI FILE EXCEL CHIA CỘT BÁO CÁO
+                    </button>
                 </div>
             `;
             
-            // Gửi điểm lên Google Sheets của Thầy
+            // Gửi điểm an toàn
             fetch(SCRIPT_WEB_APP_URL, {
                 method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ student_name: currentStudentName, student_class: currentStudentClass, course_title: currentCourseObj.title, score: finalScore.toFixed(2) })
-            });
+                body: JSON.stringify({ student_name: currentStudentName, student_class: currentStudentClass, course_title: currentCourseObj.title, score: parseFloat(finalScore.toFixed(2)) })
+            }).catch(e => console.log("Lỗi đồng bộ Sheet:", e));
         }
 
-        // TÁCH BIỆT CỘT TUYỆT ĐỐI - ĐẢM BẢO KHÔNG BỊ DÍNH CHỮ KHI MỞ TRÊN EXCEL
         function exportStructuredExcel(score) {
             let csvRows = [];
-            
-            // Header phân tách bằng dấu phẩy để Excel tách cell trực tiếp
             csvRows.push("Mon Thi,Ho va Ten,Lop,Tong Diem,Chi Tiet Phan I,Chi Tiet Phan II,Chi Tiet Phan III");
 
-            // Xử lý chuỗi báo cáo gọn trong ô
             let p1Arr = []; selectedPart1.forEach(q => { p1Arr.push(`ID_${q.id}:${studentAnswers.part1[q.id]||'-'}`); });
             let p2Arr = []; selectedPart2.forEach(q => {
-                let subAns = []; ['a','b','c','d'].forEach(sub => { subAns.push(`${sub}:${studentAnswers.part2[q.id+'_'+sub]||'-'}`); });
-                p2Arr.push(`ID_${q.id}(${subAns.join(' ')})`);
+                let ansArray = String(q.answer || "").split('|');
+                if(ansArray.length > 1) {
+                    let subAns = []; ['a','b','c','d'].forEach((sub, i) => { if(i < ansArray.length) subAns.push(`${sub}:${studentAnswers.part2[q.id+'_'+sub]||'-'}`); });
+                    p2Arr.push(`ID_${q.id}(${subAns.join(' ')})`);
+                } else {
+                    p2Arr.push(`ID_${q.id}:${studentAnswers.part2[q.id]||'-'}`);
+                }
             });
             let p3Arr = []; selectedPart3.forEach(q => { p3Arr.push(`ID_${q.id}:${studentAnswers.part3[q.id]||'-'}`); });
 
@@ -401,7 +500,6 @@ function renderCourses() {
             ].join(",");
 
             csvRows.push(dataLine);
-
             let csvContent = "\uFEFF" + csvRows.join("\n");
             let blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             let link = document.createElement("a");
@@ -414,19 +512,21 @@ function renderCourses() {
             const name = document.getElementById('search_student_name').value.trim().toLowerCase();
             const sClass = document.getElementById('search_student_class').value.trim().toLowerCase();
             const output = document.getElementById('lookup-output');
-            if(!name || !sClass) { alert("Vui lòng nhập đủ thông tin!"); return; }
-            output.innerHTML = '<div class="text-center text-muted small">⏳ Đang tìm kiếm...</div>';
+            if(!name || !sClass) { alert("Vui lòng nhập đủ thông tin (Họ tên & Lớp)!"); return; }
+            output.innerHTML = '<div class="text-center text-primary fw-bold mt-2">⏳ Đang tìm kiếm...</div>';
             try {
                 const res = await fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=quiz_results`);
                 const history = parseCSV(await res.text());
-                const match = history.filter(h => h["student_name"] && h["student_name"].toLowerCase().includes(name) && h["student_class"] && h["student_class"].toLowerCase() === sClass);
-                if(match.length === 0) { output.innerHTML = '<div class="alert alert-warning p-2">Không có lịch sử thi khớp.</div>'; } 
-                else {
-                    let html = '<div class="list-group">';
-                    match.forEach(m => { html += `<div class="list-group-item p-2 mb-1 border-start border-primary border-3"><div class="fw-bold small">${m["course_title"]}</div><div class="d-flex justify-content-between"><span style="font-size:0.75rem;">${m["timestamp"]||''}</span><span class="badge bg-primary">${m["score"]} ĐT</span></div></div>`; });
+                const match = history.filter(h => String(h["student_name"]||"").toLowerCase().includes(name) && String(h["student_class"]||"").toLowerCase() === sClass);
+                
+                if(match.length === 0) { 
+                    output.innerHTML = '<div class="alert alert-warning p-2 mt-2 text-center">Không tìm thấy lịch sử thi.</div>'; 
+                } else {
+                    let html = '<div class="list-group mt-2">';
+                    match.forEach(m => { html += `<div class="list-group-item p-3 mb-2 border-start border-primary border-4 shadow-sm"><div class="fw-bold text-dark mb-1">${m["course_title"]}</div><div class="d-flex justify-content-between align-items-center"><span class="text-muted small">${m["timestamp"]||''}</span><span class="badge bg-primary fs-6">${m["score"]} Điểm</span></div></div>`; });
                     output.innerHTML = html + '</div>';
                 }
-            } catch (e) { output.innerHTML = '<div class="text-danger small">Lỗi kết nối dữ liệu.</div>'; }
+            } catch (e) { output.innerHTML = `<div class="alert alert-danger p-2 mt-2">Lỗi: ${e.message}</div>`; }
         }
 
         window.onload = loadDataFromCloud;
