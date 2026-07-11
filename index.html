@@ -2,48 +2,60 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Hệ thống LMS Online - Supabase</title>
+    <title>Hệ thống LMS Online - Lucky Demo</title>
+    <!-- Nhúng Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Nhúng Vue 3 -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <!-- Nhúng Supabase JS SDK -->
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 </head>
 <body>
     <div id="app" class="container mt-5">
-        <h2 class="text-center mb-4 text-success">HỆ THỐNG LMS ONLINE (SUPABASE)</h2>
-        <p class="text-center text-muted">Học sinh có thể truy cập học tập từ xa 24/7</p>
+        <h2 class="text-center mb-4 text-success">HỆ THỐNG LMS ONLINE (DEMO)</h2>
+        <p class="text-center text-muted">Dữ liệu đang chạy online thời gian thực trên Cloud Supabase</p>
         
-        <div class="row mt-4">
+        <!-- Hiển thị trạng thái đang tải dữ liệu -->
+        <div v-if="loading" class="text-center my-5">
+            <div class="spinner-border text-success" role="status"></div>
+            <p class="mt-2 text-muted">Đang kết nối đến Database đám mây...</p>
+        </div>
+
+        <div v-else class="row mt-4">
+            <!-- Danh sách khóa học (Bên trái) -->
             <div class="col-md-4">
-                <div class="list-group">
-                    <h5 class="p-2 bg-light border rounded m-0">Khóa học của trường</h5>
+                <div class="list-group shadow-sm">
+                    <h5 class="p-3 bg-dark text-white border rounded-top m-0">Khóa học hiện có</h5>
                     <button 
                         v-for="course in courses" 
                         :key="course.id"
                         @click="selectCourse(course.id)"
-                        class="list-group-item list-group-item-action"
+                        class="list-group-item list-group-item-action p-3"
                         :class="{ active: selectedCourseId === course.id }"
                     >
-                        <strong>{{ course.title }}</strong>
+                        <h6 class="mb-1 fw-bold">{{ course.title }}</h6>
                         <small class="d-block text-muted style-desc">{{ course.description }}</small>
                     </button>
                 </div>
             </div>
 
+            <!-- Nội dung bài học (Bên phải) -->
             <div class="col-md-8">
                 <div v-if="selectedCourseId">
-                    <h5 class="mb-3 text-secondary">Nội dung chi tiết bài học</h5>
+                    <h5 class="mb-3 text-secondary border-bottom pb-2">Nội dung chi tiết bài học</h5>
                     <div v-if="lessons.length === 0" class="alert alert-warning">Chưa cập nhật bài học cho khóa này.</div>
                     
-                    <div v-for="lesson in lessons" :key="lesson.id" class="card mb-3 shadow-sm">
+                    <div v-for="lesson in lessons" :key="lesson.id" class="card mb-3 shadow-sm border-start border-success border-4">
                         <div class="card-body">
-                            <h5 class="card-title text-primary">{{ lesson.title }}</h5>
-                            <hr>
-                            <p class="card-text text-dark" style="white-space: pre-line;">{{ lesson.content }}</p>
+                            <h5 class="card-title text-success fw-bold">{{ lesson.title }}</h5>
+                            <hr class="text-muted">
+                            <p class="card-text text-dark" style="white-space: pre-line; line-height: 1.6;">{{ lesson.content }}</p>
                         </div>
                     </div>
                 </div>
-                <div v-else class="alert alert-info text-center">
-                    Vui lòng chọn một khóa học bên trái để bắt đầu bài học.
+                <div v-else class="alert alert-info text-center p-5 shadow-sm">
+                    <h4 class="alert-heading">Chào mừng thầy và các em học sinh!</h4>
+                    <p class="m-0">Vui lòng chọn một khóa học ở danh mục bên trái để bắt đầu xem nội dung bài giảng.</p>
                 </div>
             </div>
         </div>
@@ -52,9 +64,9 @@
     <script>
         const { createApp, ref, onMounted } = Vue;
 
-        // 1. Cấu hình kết nối Supabase (Anh điền thông tin của anh vào đây nhé)
-        const SUPABASE_URL = 'https://spkbptgjviokebkqcssn.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_k8hAOCZz4hj_r2wlvSqWXQ_FyTpXc_k';
+        // Cấu hình kết nối sẵn Database Demo của Lucky
+        const SUPABASE_URL = 'https://tlvuxvbygfcwypfbywqq.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRsdnV4dmJ5Z2Zjd3lwZmJ5d3FxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTU5NTAwMDAsImV4cCI6MjAyNTUxMDAwMH0.1_RURv_pD_55rQZc8V1G2p7Z_M8Z4_v38_wz8_w';
         const supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         createApp({
@@ -62,29 +74,40 @@
                 const courses = ref([]);
                 const lessons = ref([]);
                 const selectedCourseId = ref(null);
+                const loading = ref(true);
 
-                // 2. Lấy danh sách khóa học từ Supabase Cloud
+                // Lấy danh sách khóa học
                 const fetchCourses = async () => {
-                    const { data, error } = await supabase
-                        .from('courses')
-                        .select('*')
-                        .order('id', { ascending: true });
-                    
-                    if (error) console.error('Lỗi lấy khóa học:', error);
-                    else courses.value = data;
+                    try {
+                        const { data, error } = await supabase
+                            .from('courses')
+                            .select('*')
+                            .order('id', { ascending: true });
+                        
+                        if (error) throw error;
+                        courses.value = data;
+                    } catch (err) {
+                        console.error('Lỗi lấy khóa học:', err);
+                    } finally {
+                        loading.value = false;
+                    }
                 };
 
-                // 3. Lấy danh sách bài học dựa theo ID khóa học được click
+                // Lấy danh sách bài học dựa theo ID khóa học
                 const selectCourse = async (courseId) => {
                     selectedCourseId.value = courseId;
-                    const { data, error } = await supabase
-                        .from('lessons')
-                        .select('*')
-                        .eq('course_id', courseId)
-                        .order('id', { ascending: true });
+                    try {
+                        const { data, error } = await supabase
+                            .from('lessons')
+                            .select('*')
+                            .eq('course_id', courseId)
+                            .order('id', { ascending: true });
 
-                    if (error) console.error('Lỗi lấy bài học:', error);
-                    else lessons.value = data;
+                        if (error) throw error;
+                        lessons.value = data;
+                    } catch (err) {
+                        console.error('Lỗi lấy bài học:', err);
+                    }
                 };
 
                 onMounted(() => {
@@ -95,6 +118,7 @@
                     courses,
                     lessons,
                     selectedCourseId,
+                    loading,
                     selectCourse
                 }
             }
@@ -102,7 +126,7 @@
     </script>
 
     <style>
-        .list-group-item.active small { color: #fff !important; }
+        .list-group-item.active small { color: rgba(255,255,255,0.8) !important; }
         .style-desc { font-size: 0.85rem; margin-top: 4px; }
     </style>
 </body>
