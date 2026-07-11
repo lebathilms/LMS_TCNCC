@@ -74,7 +74,6 @@
         let currentTab = 'lessons'; 
         let timerInterval = null;
         
-        // BIẾN LƯU TÊN HỌC SINH ĐỂ KHÔNG BỊ MẤT KHI CHUYỂN MÀN HÌNH
         let currentStudentName = "";
         let currentStudentClass = "";
 
@@ -177,7 +176,10 @@
             clearInterval(timerInterval);
             const container = document.getElementById('main-content-container');
             const filteredQuestions = allQuestions.filter(q => q.course_id == currentCourseId);
-            const qLimit = parseInt(currentCourseObj.quiz_limit) || filteredQuestions.length;
+            
+            // Tính toán giới hạn số câu hỏi (Tối đa 40 câu hoặc bằng số câu đang có trong ngân hàng)
+            const maxAllowed = Math.min(40, filteredQuestions.length);
+            const defaultLimit = Math.min(10, maxAllowed);
             const qTime = currentCourseObj.quiz_time || 15;
 
             let html = `<h5 class="mb-3 border-bottom pb-2 text-danger fw-bold">ĐĂNG KÝ VÀO PHÒNG THI MÔN: ${currentCourseObj.title}</h5>`;
@@ -188,8 +190,8 @@
 
             html += `
                 <div class="card shadow-sm p-4 text-center border-danger mb-4">
-                    <p class="fs-5 mb-1">Cấu trúc đề thi: <strong class="text-primary">${qLimit} câu</strong> (Trộn ngẫu nhiên từ ngân hàng đề)</p>
-                    <p class="fs-5 mb-4">Thời gian làm bài: <strong class="text-danger">${qTime} phút</strong></p>
+                    <p class="fs-5 mb-1 text-muted">Ngân hàng đề hiện có: <strong>${filteredQuestions.length} câu</strong></p>
+                    <p class="fs-5 mb-3">Thời gian làm bài quy định: <strong class="text-danger">${qTime} phút</strong></p>
                     
                     <div class="row g-3 justify-content-center text-start mb-4" style="max-width: 500px; margin: 0 auto;">
                         <div class="col-12">
@@ -200,6 +202,11 @@
                             <label class="form-label fw-bold">Lớp:</label>
                             <input type="text" id="student_class" class="form-control" placeholder="Ví dụ: ĐT24..." required>
                         </div>
+                        <div class="col-12 p-3 mt-3 bg-light border rounded">
+                            <label class="form-label fw-bold text-primary">Tùy chọn số lượng câu hỏi thi:</label>
+                            <input type="number" id="quiz_custom_limit" class="form-control border-primary" value="${defaultLimit}" min="1" max="${maxAllowed}">
+                            <small class="text-muted d-block mt-1">* Điểm mỗi câu được chia tự động (Tối thiểu 0.25đ/câu). Hệ thống cho phép chọn tối đa ${maxAllowed} câu.</small>
+                        </div>
                     </div>
                     <button onclick="startQuiz()" class="btn btn-danger btn-lg px-5 fw-bold shadow">🚀 Xác Nhận Bắt Đầu Làm Bài</button>
                 </div>
@@ -208,25 +215,36 @@
         }
 
         let selectedQuestions = [];
+        let currentPointsPerQuestion = 0;
+
         function startQuiz() {
-            // LƯU LẠI TÊN VÀ LỚP VÀO BIẾN TRƯỚC KHI TẠO ĐỀ THI
             const nameInput = document.getElementById('student_name').value.trim();
             const classInput = document.getElementById('student_class').value.trim();
+            const limitInput = parseInt(document.getElementById('quiz_custom_limit').value);
             
             if(!nameInput || !classInput) { 
                 alert("Vui lòng nhập Họ tên và Lớp trước khi thi!"); 
                 return; 
             }
+
+            const filteredQuestions = allQuestions.filter(q => q.course_id == currentCourseId);
+            const maxAllowed = Math.min(40, filteredQuestions.length);
+
+            if(!limitInput || limitInput < 1 || limitInput > maxAllowed) {
+                alert(`Số lượng câu hỏi không hợp lệ! Vui lòng chọn từ 1 đến ${maxAllowed} câu.`);
+                return;
+            }
             
             currentStudentName = nameInput;
             currentStudentClass = classInput;
+            
+            // Tính điểm cho mỗi câu
+            currentPointsPerQuestion = 10 / limitInput;
 
             const container = document.getElementById('main-content-container');
-            const filteredQuestions = allQuestions.filter(q => q.course_id == currentCourseId);
             
             let shuffled = filteredQuestions.sort(() => 0.5 - Math.random());
-            let limit = parseInt(currentCourseObj.quiz_limit) || filteredQuestions.length;
-            selectedQuestions = shuffled.slice(0, limit);
+            selectedQuestions = shuffled.slice(0, limitInput);
 
             let quizMinutes = parseInt(currentCourseObj.quiz_time) || 15;
             let timeRemaining = quizMinutes * 60;
@@ -236,7 +254,10 @@
                     <h5 class="text-danger fw-bold m-0">🔥 ĐANG THI MÔN: ${currentCourseObj.title}</h5>
                     <div id="countdown-timer">⏰ ${quizMinutes}:00</div>
                 </div>
-                <div class="alert alert-info">Thí sinh: <strong>${currentStudentName}</strong> - Lớp: <strong>${currentStudentClass}</strong></div>
+                <div class="alert alert-info d-flex justify-content-between">
+                    <div>Thí sinh: <strong>${currentStudentName}</strong> - Lớp: <strong>${currentStudentClass}</strong></div>
+                    <div>Gói thi: <strong>${limitInput} câu</strong> (${currentPointsPerQuestion.toFixed(2)}đ/câu)</div>
+                </div>
                 <form id="quiz-form" onsubmit="submitQuiz(event)">
             `;
 
@@ -284,24 +305,28 @@
             const btnSubmit = document.getElementById('btn-submit-quiz');
             if(btnSubmit) { btnSubmit.disabled = true; btnSubmit.innerText = "Đang chấm điểm & lưu dữ liệu..."; }
 
-            let score = 0;
+            let scoreCorrect = 0;
             let total = selectedQuestions.length;
 
             selectedQuestions.forEach(q => {
                 const selected = document.querySelector(`input[name="question_${q.id}"]:checked`);
-                if (selected && selected.value === q.answer.trim().toUpperCase()) { score++; }
+                if (selected && selected.value === q.answer.trim().toUpperCase()) { scoreCorrect++; }
             });
 
-            let finalGrade = total > 0 ? ((score / total) * 10).toFixed(1) : "0.0";
+            // Tính điểm và làm tròn 2 chữ số thập phân (Ví dụ 8.75)
+            let finalGradeNum = total > 0 ? (scoreCorrect * currentPointsPerQuestion) : 0;
+            let finalGradeStr = finalGradeNum.toFixed(2);
+            // Loại bỏ số 0 thừa nếu là số nguyên (ví dụ 8.00 thành 8)
+            if(finalGradeStr.endsWith('.00')) finalGradeStr = parseInt(finalGradeNum);
 
             const resultDiv = document.getElementById('quiz-result-alert');
             resultDiv.style.display = 'block';
-            resultDiv.className = `alert ${finalGrade >= 5 ? 'alert-success' : 'alert-danger'} text-center shadow p-4`;
+            resultDiv.className = `alert ${finalGradeNum >= 5 ? 'alert-success' : 'alert-danger'} text-center shadow p-4`;
             resultDiv.innerHTML = `
                 <h4 class="fw-bold">KẾT QUẢ THI CỦA: ${currentStudentName.toUpperCase()} - LỚP: ${currentStudentClass.toUpperCase()}</h4>
                 <p class="fs-5 m-0">Môn thi: <strong>${currentCourseObj.title}</strong></p>
-                <p class="fs-5 m-0">Số câu trả lời đúng: <strong>${score}/${total}</strong> câu.</p>
-                <h2 class="display-5 fw-bold mt-2 text-primary">${finalGrade} Điểm</h2>
+                <p class="fs-5 m-0">Số câu trả lời đúng: <strong>${scoreCorrect}/${total}</strong> câu.</p>
+                <h2 class="display-5 fw-bold mt-2 text-primary">${finalGradeStr} Điểm</h2>
                 <p class="text-muted small mt-2 m-0" id="sync-status">⏳ Đang gửi điểm số lên Google Sheets...</p>
             `;
             resultDiv.scrollIntoView({ behavior: 'smooth' });
@@ -313,7 +338,7 @@
                         student_name: currentStudentName, 
                         student_class: currentStudentClass, 
                         course_title: currentCourseObj.title, 
-                        score: parseFloat(finalGrade) 
+                        score: parseFloat(finalGradeStr) 
                     })
                 });
                 document.getElementById('sync-status').innerHTML = "✅ Điểm thi đã được cập nhật thành công lên hệ thống của Thầy!";
@@ -324,7 +349,6 @@
             }
         }
 
-        // TÍNH NĂNG TRA CỨU ĐIỂM (ĐÃ CHỈNH SỬA TÊN CỘT THEO ĐÚNG HÌNH ẢNH SHEET CỦA ANH)
         async function lookupResults() {
             const name = document.getElementById('search_student_name').value.trim().toLowerCase();
             const sClass = document.getElementById('search_student_class').value.trim().toLowerCase();
