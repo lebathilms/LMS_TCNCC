@@ -88,26 +88,48 @@
         let selectedPart1 = []; let selectedPart2 = []; let selectedPart3 = [];
         let studentAnswers = { part1: {}, part2: {}, part3: {} };
 
-        function parseCSV(text) {
-            let lines = []; let row = [""]; let inQuotes = false;
-            for (let i = 0; i < text.length; i++) {
-                let c = text[i]; let next = text[i+1];
-                if (c === '"') {
-                    if (inQuotes && next === '"') { row[row.length - 1] += '"'; i++; }
-                    else { inQuotes = !inQuotes; }
-                } else if (c === ',' && !inQuotes) { row.push(''); }
-                else if ((c === '\r' || c === '\n') && !inQuotes) {
-                    if (c === '\r' && next === '\n') { i++; }
-                    lines.push(row); row = [''];
-                } else { row[row.length - 1] += c; }
-            }
-            if (row.length > 1 || row[0] !== '') lines.push(row);
-            const headers = lines[0].map(h => h.trim());
-            return lines.slice(1).map(line => {
-                const obj = {}; headers.forEach((header, index) => { obj[header] = line[index] ? line[index].trim() : ''; });
-                return obj;
-            });
-        }
+    
+    function parseCSV(text) {
+    // Xóa ký tự BOM (Byte Order Mark) ẩn ở đầu file do Google Sheets sinh ra
+    text = text.replace(/^\uFEFF/, '');
+    
+    let lines = []; let row = [""]; let inQuotes = false;
+    for (let i = 0; i < text.length; i++) {
+        let c = text[i]; let next = text[i+1];
+        if (c === '"') {
+            if (inQuotes && next === '"') { row[row.length - 1] += '"'; i++; }
+            else { inQuotes = !inQuotes; }
+        } else if (c === ',' && !inQuotes) { row.push(''); }
+        else if ((c === '\r' || c === '\n') && !inQuotes) {
+            if (c === '\r' && next === '\n') { i++; }
+            lines.push(row); row = [''];
+        } else { row[row.length - 1] += c; }
+    }
+    if (row.length > 1 || row[0] !== '') lines.push(row);
+    
+    // Chuẩn hóa Header: xóa khoảng trắng và in thường để tránh lỗi bắt sai tên cột
+    const headers = lines[0].map(h => h.trim().toLowerCase());
+    
+    return lines.slice(1).map(line => {
+        const obj = {}; 
+        headers.forEach((header, index) => { 
+            obj[header] = line[index] ? line[index].trim() : ''; 
+        });
+        return obj;
+    });
+}
+
+function renderCourses() {
+    const listContainer = document.getElementById('course-list');
+    if (allCourses.length === 0) { listContainer.innerHTML = '<div class="p-3 text-center text-muted">Chưa có dữ liệu môn học.</div>'; return; }
+    let html = '';
+    allCourses.forEach(course => {
+        const activeClass = currentCourseId == course.id ? 'active' : '';
+        // Bọc course.id trong dấu nháy đơn để bảo vệ giá trị truyền vào hàm không bị undefined
+        html += `<button onclick="selectCourse('${course.id}')" class="list-group-item list-group-item-action p-3 ${activeClass}"><h6 class="mb-1 fw-bold">${course.title}</h6><small class="d-block style-desc">${course.description || ''}</small></button>`;
+    });
+    listContainer.innerHTML = html;
+}
 
         async function loadDataFromCloud() {
             try {
