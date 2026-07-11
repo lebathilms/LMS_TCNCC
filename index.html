@@ -33,8 +33,8 @@
                     <h5 class="card-header bg-primary text-white fw-bold">🔍 Tra cứu điểm thi</h5>
                     <div class="card-body">
                         <div class="mb-3">
-                            <input type="text" id="search_student_name" class="form-control mb-2" placeholder="Nhập Họ và Tên...">
-                            <input type="text" id="search_student_class" class="form-control" placeholder="Nhập Tên Lớp...">
+                            <input type="text" id="search_student_name" class="form-control mb-2" placeholder="Nhập đúng Họ và Tên...">
+                            <input type="text" id="search_student_class" class="form-control" placeholder="Nhập đúng Tên Lớp...">
                         </div>
                         <button onclick="lookupResults()" class="btn btn-outline-primary w-100 fw-bold">Xem điểm của tôi</button>
                         <div id="lookup-output" class="mt-3" style="max-height: 250px; overflow-y: auto;"></div>
@@ -48,7 +48,7 @@
                         <a class="nav-link active" id="tab-lessons" onclick="switchTab('lessons')">📚 Bài giảng lý thuyết</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" id="tab-quiz" onclick="switchTab('quiz')">📝 Bài kiểm tra trắc nghiệm</a>
+                        <a class="nav-link text-danger" id="tab-quiz" onclick="switchTab('quiz')">📝 Vào phòng thi trắc nghiệm</a>
                     </li>
                 </ul>
 
@@ -73,6 +73,10 @@
         let currentCourseObj = null;
         let currentTab = 'lessons'; 
         let timerInterval = null;
+        
+        // BIẾN LƯU TÊN HỌC SINH ĐỂ KHÔNG BỊ MẤT KHI CHUYỂN MÀN HÌNH
+        let currentStudentName = "";
+        let currentStudentClass = "";
 
         function parseCSV(text) {
             let lines = []; let row = [""]; let inQuotes = false;
@@ -125,7 +129,7 @@
         }
 
         function selectCourse(courseId) {
-            clearInterval(timerInterval); // Xóa đồng hồ cũ nếu đang chạy
+            clearInterval(timerInterval); 
             currentCourseId = courseId;
             currentCourseObj = allCourses.find(c => c.id == courseId);
             renderCourses();
@@ -149,7 +153,7 @@
         function renderLessons() {
             const container = document.getElementById('main-content-container');
             const filteredLessons = allLessons.filter(l => l.course_id == currentCourseId);
-            let html = `<h5 class="mb-3 text-secondary border-bottom pb-2">Nội dung bài học: ${currentCourseObj.title}</h5>`;
+            let html = `<h5 class="mb-3 text-secondary border-bottom pb-2">Nội dung bài học: <span class="text-primary">${currentCourseObj.title}</span></h5>`;
             if (filteredLessons.length === 0) {
                 html += '<div class="alert alert-warning">Môn học này hiện chưa cập nhật bài học lý thuyết.</div>';
             } else {
@@ -169,7 +173,6 @@
             container.innerHTML = html;
         }
 
-        // Màn hình chuẩn bị trước khi thi (Nhập thông tin)
         function renderQuizPrepare() {
             clearInterval(timerInterval);
             const container = document.getElementById('main-content-container');
@@ -177,16 +180,15 @@
             const qLimit = parseInt(currentCourseObj.quiz_limit) || filteredQuestions.length;
             const qTime = currentCourseObj.quiz_time || 15;
 
-            let html = `<h5 class="mb-3 text-secondary border-bottom pb-2">Bài kiểm tra trắc nghiệm: ${currentCourseObj.title}</h5>`;
+            let html = `<h5 class="mb-3 border-bottom pb-2 text-danger fw-bold">ĐĂNG KÝ VÀO PHÒNG THI MÔN: ${currentCourseObj.title}</h5>`;
             if (filteredQuestions.length === 0) {
-                html += '<div class="alert alert-warning">Môn học này hiện chưa được thiết lập câu hỏi thi.</div>';
+                html += '<div class="alert alert-warning">Môn học này hiện chưa có câu hỏi trong ngân hàng đề thi.</div>';
                 container.innerHTML = html; return;
             }
 
             html += `
-                <div class="card shadow-sm p-4 text-center border-success mb-4">
-                    <h4 class="text-success fw-bold mb-3">Thông tin môn thi</h4>
-                    <p class="fs-5 mb-1">Số câu hỏi làm bài: <strong class="text-primary">${qLimit} câu</strong> (ngẫu nhiên)</p>
+                <div class="card shadow-sm p-4 text-center border-danger mb-4">
+                    <p class="fs-5 mb-1">Cấu trúc đề thi: <strong class="text-primary">${qLimit} câu</strong> (Trộn ngẫu nhiên từ ngân hàng đề)</p>
                     <p class="fs-5 mb-4">Thời gian làm bài: <strong class="text-danger">${qTime} phút</strong></p>
                     
                     <div class="row g-3 justify-content-center text-start mb-4" style="max-width: 500px; margin: 0 auto;">
@@ -199,23 +201,29 @@
                             <input type="text" id="student_class" class="form-control" placeholder="Ví dụ: ĐT24..." required>
                         </div>
                     </div>
-                    <button onclick="startQuiz()" class="btn btn-success btn-lg px-5 fw-bold shadow">🚀 Bắt Đầu Làm Bài</button>
+                    <button onclick="startQuiz()" class="btn btn-danger btn-lg px-5 fw-bold shadow">🚀 Xác Nhận Bắt Đầu Làm Bài</button>
                 </div>
             `;
             container.innerHTML = html;
         }
 
-        // Khởi động làm bài, bốc câu hỏi và kích hoạt đồng hồ đếm ngược
         let selectedQuestions = [];
         function startQuiz() {
-            const name = document.getElementById('student_name').value.trim();
-            const sClass = document.getElementById('student_class').value.trim();
-            if(!name || !sClass) { alert("Vui lòng nhập Họ tên và Lớp trước khi thi!"); return; }
+            // LƯU LẠI TÊN VÀ LỚP VÀO BIẾN TRƯỚC KHI TẠO ĐỀ THI
+            const nameInput = document.getElementById('student_name').value.trim();
+            const classInput = document.getElementById('student_class').value.trim();
+            
+            if(!nameInput || !classInput) { 
+                alert("Vui lòng nhập Họ tên và Lớp trước khi thi!"); 
+                return; 
+            }
+            
+            currentStudentName = nameInput;
+            currentStudentClass = classInput;
 
             const container = document.getElementById('main-content-container');
             const filteredQuestions = allQuestions.filter(q => q.course_id == currentCourseId);
             
-            // Bốc ngẫu nhiên số lượng câu hỏi theo cấu hình
             let shuffled = filteredQuestions.sort(() => 0.5 - Math.random());
             let limit = parseInt(currentCourseObj.quiz_limit) || filteredQuestions.length;
             selectedQuestions = shuffled.slice(0, limit);
@@ -225,9 +233,10 @@
 
             let html = `
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="text-secondary m-0">Đang làm bài: ${currentCourseObj.title}</h5>
-                    <div id="countdown-timer">⏰ Thời gian còn lại: ${quizMinutes}:00</div>
+                    <h5 class="text-danger fw-bold m-0">🔥 ĐANG THI MÔN: ${currentCourseObj.title}</h5>
+                    <div id="countdown-timer">⏰ ${quizMinutes}:00</div>
                 </div>
+                <div class="alert alert-info">Thí sinh: <strong>${currentStudentName}</strong> - Lớp: <strong>${currentStudentClass}</strong></div>
                 <form id="quiz-form" onsubmit="submitQuiz(event)">
             `;
 
@@ -254,17 +263,16 @@
             `;
             container.innerHTML = html;
 
-            // Chạy đồng hồ đếm ngược
             timerInterval = setInterval(() => {
                 timeRemaining--;
                 let mins = Math.floor(timeRemaining / 60);
                 let secs = timeRemaining % 60;
-                document.getElementById('countdown-timer').innerText = `⏰ Thời gian còn lại: ${mins}:${secs < 10 ? '0' : ''}${secs}`;
+                document.getElementById('countdown-timer').innerText = `⏰ ${mins}:${secs < 10 ? '0' : ''}${secs}`;
                 
                 if (timeRemaining <= 0) {
                     clearInterval(timerInterval);
-                    alert("Hết giờ làm bài! Hệ thống tự động nộp bài.");
-                    document.getElementById('quiz-form').requestSubmit(); // Tự động nộp bài
+                    alert("Đã hết thời gian làm bài! Hệ thống sẽ tự động thu bài.");
+                    document.getElementById('quiz-form').requestSubmit(); 
                 }
             }, 1000);
         }
@@ -273,10 +281,8 @@
             if(e) e.preventDefault();
             clearInterval(timerInterval);
             
-            const name = document.getElementById('student_name') ? document.getElementById('student_name').value.trim() : "Học sinh";
-            const sClass = document.getElementById('student_class') ? document.getElementById('student_class').value.trim() : "Lớp";
             const btnSubmit = document.getElementById('btn-submit-quiz');
-            if(btnSubmit) { btnSubmit.disabled = true; btnSubmit.innerText = "Đang chấm điểm & lưu..."; }
+            if(btnSubmit) { btnSubmit.disabled = true; btnSubmit.innerText = "Đang chấm điểm & lưu dữ liệu..."; }
 
             let score = 0;
             let total = selectedQuestions.length;
@@ -292,57 +298,61 @@
             resultDiv.style.display = 'block';
             resultDiv.className = `alert ${finalGrade >= 5 ? 'alert-success' : 'alert-danger'} text-center shadow p-4`;
             resultDiv.innerHTML = `
-                <h4 class="fw-bold">KẾT QUẢ CỦA: ${name.toUpperCase()} - LỚP: ${sClass.toUpperCase()}</h4>
-                <p class="fs-5 m-0">Số câu đúng: <strong>${score}/${total}</strong> câu.</p>
+                <h4 class="fw-bold">KẾT QUẢ THI CỦA: ${currentStudentName.toUpperCase()} - LỚP: ${currentStudentClass.toUpperCase()}</h4>
+                <p class="fs-5 m-0">Môn thi: <strong>${currentCourseObj.title}</strong></p>
+                <p class="fs-5 m-0">Số câu trả lời đúng: <strong>${score}/${total}</strong> câu.</p>
                 <h2 class="display-5 fw-bold mt-2 text-primary">${finalGrade} Điểm</h2>
-                <p class="text-muted small mt-2 m-0" id="sync-status">⏳ Đang đồng bộ điểm số lên đám mây của Thầy...</p>
+                <p class="text-muted small mt-2 m-0" id="sync-status">⏳ Đang gửi điểm số lên Google Sheets...</p>
             `;
             resultDiv.scrollIntoView({ behavior: 'smooth' });
 
-            // Gửi điểm lên Google Sheets Cloud
             try {
                 await fetch(SCRIPT_WEB_APP_URL, {
                     method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ student_name: name, student_class: sClass, course_title: currentCourseObj.title, score: parseFloat(finalGrade) })
+                    body: JSON.stringify({ 
+                        student_name: currentStudentName, 
+                        student_class: currentStudentClass, 
+                        course_title: currentCourseObj.title, 
+                        score: parseFloat(finalGrade) 
+                    })
                 });
-                document.getElementById('sync-status').innerHTML = "✅ Điểm số đã được lưu an toàn vào Google Sheets thành công!";
+                document.getElementById('sync-status').innerHTML = "✅ Điểm thi đã được cập nhật thành công lên hệ thống của Thầy!";
                 document.getElementById('sync-status').className = "text-success fw-bold small mt-2 m-0";
             } catch (err) {
-                document.getElementById('sync-status').innerHTML = "❌ Lỗi đồng bộ đám mây, hãy báo lại cho Thầy.";
+                document.getElementById('sync-status').innerHTML = "❌ Có lỗi xảy ra khi lưu điểm, vui lòng chụp màn hình gửi Giáo viên.";
                 document.getElementById('sync-status').className = "text-danger fw-bold small mt-2 m-0";
             }
         }
 
-        // TÍNH NĂNG TRA CỨU ĐIỂM THI ĐÃ LƯU
+        // TÍNH NĂNG TRA CỨU ĐIỂM (ĐÃ CHỈNH SỬA TÊN CỘT THEO ĐÚNG HÌNH ẢNH SHEET CỦA ANH)
         async function lookupResults() {
             const name = document.getElementById('search_student_name').value.trim().toLowerCase();
             const sClass = document.getElementById('search_student_class').value.trim().toLowerCase();
             const output = document.getElementById('lookup-output');
             
-            if(!name || !sClass) { alert("Vui lòng nhập cả Tên và Lớp để tìm kiếm lại điểm!"); return; }
-            output.innerHTML = '<div class="text-center text-muted small">⏳ Đang tìm kiếm...</div>';
+            if(!name || !sClass) { alert("Vui lòng nhập đầy đủ Tên và Lớp để tìm kiếm!"); return; }
+            output.innerHTML = '<div class="text-center text-muted small">⏳ Hệ thống đang dò tìm dữ liệu...</div>';
 
             try {
                 const res = await fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=quiz_results`);
                 const history = parseCSV(await res.text());
                 
-                // Lọc lịch sử thi trùng tên và lớp
                 const match = history.filter(h => 
-                    h["Họ tên học sinh"] && h["Họ tên học sinh"].toLowerCase().includes(name) &&
-                    h["Lớp"] && h["Lớp"].toLowerCase() === sClass
+                    h["student_name"] && h["student_name"].toLowerCase().includes(name) &&
+                    h["student_class"] && h["student_class"].toLowerCase() === sClass
                 );
 
                 if(match.length === 0) {
-                    output.innerHTML = '<div class="alert alert-warning small p-2 m-0">Không tìm thấy lịch sử thi của em này.</div>';
+                    output.innerHTML = '<div class="alert alert-warning small p-2 m-0">Không tìm thấy lịch sử bài thi nào khớp với Tên và Lớp này.</div>';
                 } else {
                     let html = '<div class="list-group">';
                     match.forEach(m => {
                         html += `
                             <div class="list-group-item p-2 mb-1 shadow-sm border-start border-primary border-3">
-                                <div class="fw-bold small text-dark">${m["Môn kiểm tra"]}</div>
+                                <div class="fw-bold small text-dark">${m["course_title"]}</div>
                                 <div class="d-flex justify-content-between align-items-center">
-                                    <span class="text-muted" style="font-size:0.75rem;">${m["Thời gian"] || ''}</span>
-                                    <span class="badge bg-primary fs-6">${m["Điểm số"]} ĐT</span>
+                                    <span class="text-muted" style="font-size:0.75rem;">${m["timestamp"] || ''}</span>
+                                    <span class="badge bg-primary fs-6">${m["score"]} ĐT</span>
                                 </div>
                             </div>
                         `;
@@ -351,7 +361,7 @@
                     output.innerHTML = html;
                 }
             } catch (e) {
-                output.innerHTML = '<div class="text-danger small">Lỗi kết nối khi tra cứu điểm.</div>';
+                output.innerHTML = '<div class="text-danger small">Lỗi kết nối khi tải dữ liệu tra cứu.</div>';
             }
         }
 
