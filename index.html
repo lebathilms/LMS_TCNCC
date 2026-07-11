@@ -2,782 +2,148 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <title>LMS – Nền tảng học tập trực tuyến</title>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Playfair+Display:wght@600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+  <title>LMS Nova – Dashboard hiện đại</title>
+
+  <!-- Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+
+  <!-- AOS Animation -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css" rel="stylesheet">
+
+  <!-- Lottie Player -->
+  <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+
   <style>
-    :root {
-      --primary: #1A73E8;
-      --secondary: #6C63FF;
-      --bg-light: #F5F7FA;
-      --bg-dark: #1F1F1F;
-      --text-main: #1F1F1F;
-      --text-muted: #6B7280;
-      --card-bg: #FFFFFF;
-      --accent: #00D4FF;
-    }
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    body {
-      font-family: 'Inter', sans-serif;
-      background: var(--bg-light);
-      color: var(--text-main);
-      line-height: 1.6;
-    }
-    a { text-decoration: none; color: inherit; }
-
-    /* Layout */
-    .container {
-      width: 90%;
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-
-    /* Header */
-    header {
-      background: #FFFFFF;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-      position: sticky;
-      top: 0;
-      z-index: 10;
-    }
-    .header-inner {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 15px 0;
-    }
-    .logo {
-      font-family: 'Playfair Display', serif;
-      font-size: 24px;
-      font-weight: 600;
-      color: var(--primary);
-    }
-    .logo span {
-      color: var(--secondary);
-    }
-    nav ul {
-      list-style: none;
-      display: flex;
-      gap: 20px;
-      font-size: 14px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-    nav li {
-      cursor: pointer;
-      position: relative;
-    }
-    nav li::after {
-      content: "";
-      position: absolute;
-      left: 0;
-      bottom: -4px;
-      width: 0;
-      height: 2px;
-      background: linear-gradient(90deg, var(--primary), var(--secondary));
-      transition: width 0.3s;
-    }
-    nav li:hover::after {
-      width: 100%;
-    }
-    .btn-primary {
-      padding: 10px 20px;
-      border-radius: 999px;
-      background: linear-gradient(135deg, var(--primary), var(--secondary));
-      color: #FFFFFF;
-      font-weight: 600;
-      font-size: 14px;
-      box-shadow: 0 8px 20px rgba(26,115,232,0.35);
-      border: none;
-      cursor: pointer;
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
-    .btn-primary:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 10px 24px rgba(26,115,232,0.45);
-    }
-
-    /* Hero */
-    .hero {
-      padding: 60px 0 40px;
-    }
-    .hero-inner {
-      display: grid;
-      grid-template-columns: 1.2fr 1fr;
-      gap: 40px;
-      align-items: center;
-    }
-    .hero-title {
-      font-family: 'Playfair Display', serif;
-      font-size: 36px;
-      color: var(--bg-dark);
-    }
-    .hero-title span {
-      background: linear-gradient(135deg, var(--primary), var(--secondary));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-    .hero-sub {
-      margin-top: 15px;
-      color: var(--text-muted);
-      font-size: 15px;
-    }
-    .hero-actions {
-      margin-top: 25px;
-      display: flex;
-      gap: 15px;
-      align-items: center;
-    }
-    .btn-secondary {
-      padding: 9px 18px;
-      border-radius: 999px;
-      border: 1px solid var(--primary);
-      background: transparent;
-      color: var(--primary);
-      font-size: 13px;
-      cursor: pointer;
-      transition: background 0.2s, color 0.2s;
-    }
-    .btn-secondary:hover {
-      background: var(--primary);
-      color: #FFFFFF;
-    }
-    .hero-meta {
-      margin-top: 20px;
-      display: flex;
-      gap: 25px;
-      font-size: 13px;
-      color: var(--text-muted);
-    }
-    .hero-meta span {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .hero-meta span::before {
-      content: "●";
-      font-size: 8px;
-      color: var(--secondary);
-    }
-    .hero-visual {
-      position: relative;
-      height: 260px;
-      border-radius: 24px;
-      background: radial-gradient(circle at top left, #6C63FF 0%, #1A73E8 40%, #1F1F1F 100%);
-      box-shadow: 0 20px 40px rgba(0,0,0,0.35);
-      overflow: hidden;
-    }
-    .hero-visual::before {
-      content: "";
-      position: absolute;
-      width: 180px;
-      height: 180px;
-      background: radial-gradient(circle, rgba(255,255,255,0.25), transparent 70%);
-      top: -40px;
-      right: -20px;
-      filter: blur(2px);
-    }
-    .hero-visual-inner {
-      position: absolute;
-      inset: 20px;
-      border-radius: 18px;
-      border: 1px solid rgba(255,255,255,0.25);
-      backdrop-filter: blur(6px);
-      padding: 18px;
-      color: #FFFFFF;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-    }
-    .hero-visual-title {
-      font-size: 16px;
-      font-weight: 600;
-    }
-    .hero-visual-sub {
-      font-size: 13px;
-      opacity: 0.85;
-    }
-    .hero-visual-progress {
-      margin-top: 12px;
-    }
-    .progress-bar {
-      width: 100%;
-      height: 6px;
-      border-radius: 999px;
-      background: rgba(255,255,255,0.15);
-      overflow: hidden;
-    }
-    .progress-fill {
-      width: 68%;
-      height: 100%;
-      background: linear-gradient(90deg, #00D4FF, #6C63FF);
-    }
-    .hero-visual-footer {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 12px;
-      opacity: 0.9;
-    }
-    .hero-badge {
-      padding: 6px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,0.5);
-      font-size: 11px;
-    }
-
-    /* Sections */
-    section {
-      padding: 40px 0;
-    }
-    .section-title {
-      font-family: 'Montserrat', sans-serif;
-      font-size: 22px;
-      font-weight: 700;
-      margin-bottom: 10px;
-      color: var(--bg-dark);
-    }
-    .section-sub {
-      font-size: 14px;
-      color: var(--text-muted);
-      margin-bottom: 25px;
-    }
-
-    /* Features */
-    .features-grid {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 20px;
-    }
-    .feature-card {
-      background: var(--card-bg);
-      border-radius: 16px;
-      padding: 18px;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.04);
-      border: 1px solid rgba(148,163,184,0.25);
-    }
-    .feature-icon {
-      width: 34px;
-      height: 34px;
-      border-radius: 999px;
-      background: radial-gradient(circle, var(--secondary), var(--primary));
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #FFFFFF;
-      font-size: 18px;
-      margin-bottom: 10px;
-    }
-    .feature-title {
-      font-size: 14px;
-      font-weight: 600;
-      margin-bottom: 6px;
-    }
-    .feature-text {
-      font-size: 13px;
-      color: var(--text-muted);
-    }
-
-    /* Roadmap */
-    .roadmap-grid {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 18px;
-    }
-    .roadmap-card {
-      background: var(--card-bg);
-      border-radius: 16px;
-      padding: 16px;
-      border: 1px solid rgba(148,163,184,0.3);
-      position: relative;
-      overflow: hidden;
-    }
-    .roadmap-step {
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--secondary);
-      margin-bottom: 6px;
-    }
-    .roadmap-title {
-      font-size: 14px;
-      font-weight: 600;
-      margin-bottom: 6px;
-    }
-    .roadmap-text {
-      font-size: 13px;
-      color: var(--text-muted);
-    }
-    .roadmap-card::after {
-      content: "";
-      position: absolute;
-      width: 60px;
-      height: 60px;
-      border-radius: 999px;
-      background: radial-gradient(circle, rgba(108,99,255,0.25), transparent 70%);
-      bottom: -20px;
-      right: -10px;
-    }
-
-    /* Courses */
-    .courses-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 20px;
-    }
-    .course-card {
-      background: var(--card-bg);
-      border-radius: 18px;
-      overflow: hidden;
-      box-shadow: 0 10px 24px rgba(0,0,0,0.05);
-      border: 1px solid rgba(148,163,184,0.25);
-      display: flex;
-      flex-direction: column;
-    }
-    .course-thumb {
-      height: 120px;
-      background: linear-gradient(135deg, var(--primary), var(--secondary));
-      position: relative;
-    }
-    .course-thumb::after {
-      content: "";
-      position: absolute;
-      width: 80px;
-      height: 80px;
-      border-radius: 999px;
-      background: radial-gradient(circle, rgba(255,255,255,0.35), transparent 70%);
-      top: 10px;
-      left: 10px;
-    }
-    .course-body {
-      padding: 14px 16px 16px;
-      font-size: 13px;
-    }
-    .course-title {
-      font-size: 14px;
-      font-weight: 600;
-      margin-bottom: 6px;
-    }
-    .course-meta {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: 8px;
-      color: var(--text-muted);
-      font-size: 12px;
-    }
-    .course-btn {
-      margin-top: 10px;
-      padding: 7px 12px;
-      border-radius: 999px;
-      border: none;
-      background: var(--primary);
-      color: #FFFFFF;
-      font-size: 12px;
-      cursor: pointer;
-    }
-
-    /* Instructors */
-    .instructors-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 20px;
-    }
-    .instructor-card {
-      background: var(--card-bg);
-      border-radius: 18px;
-      padding: 16px;
-      text-align: center;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.04);
-      border: 1px solid rgba(148,163,184,0.25);
-    }
-    .instructor-avatar {
-      width: 70px;
-      height: 70px;
-      border-radius: 999px;
-      margin: 0 auto 10px;
-      background: radial-gradient(circle, var(--secondary), var(--primary));
-      box-shadow: 0 0 0 4px rgba(255,255,255,0.8);
-    }
-    .instructor-name {
-      font-size: 14px;
-      font-weight: 600;
-      margin-bottom: 4px;
-    }
-    .instructor-role {
-      font-size: 12px;
-      color: var(--text-muted);
-      margin-bottom: 8px;
-    }
-    .instructor-link {
-      font-size: 12px;
-      color: var(--primary);
-      cursor: pointer;
-    }
-
-    /* Testimonials */
-    .testimonials-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 20px;
-    }
-    .testimonial-card {
-      background: var(--card-bg);
-      border-radius: 18px;
-      padding: 16px;
-      border: 1px solid rgba(148,163,184,0.25);
-      position: relative;
-    }
-    .testimonial-quote {
-      font-size: 13px;
-      color: var(--text-muted);
-      margin-bottom: 10px;
-    }
-    .testimonial-user {
-      font-size: 13px;
-      font-weight: 600;
-    }
-    .testimonial-role {
-      font-size: 12px;
-      color: var(--text-muted);
-    }
-    .testimonial-stars {
-      margin-top: 6px;
-      font-size: 12px;
-      color: #FBBF24;
-    }
-
-    /* Footer */
-    footer {
-      background: var(--bg-dark);
-      color: #E5E7EB;
-      padding: 30px 0 20px;
-      margin-top: 30px;
-    }
-    .footer-inner {
-      display: grid;
-      grid-template-columns: 2fr 1fr 1fr;
-      gap: 20px;
-      font-size: 13px;
-    }
-    .footer-logo {
-      font-family: 'Playfair Display', serif;
-      font-size: 20px;
-      margin-bottom: 8px;
-    }
-    .footer-logo span {
-      color: var(--accent);
-    }
-    .footer-links ul {
-      list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-    .footer-links li {
-      cursor: pointer;
-    }
-    .footer-social {
-      display: flex;
-      gap: 10px;
-      margin-top: 8px;
-    }
-    .footer-social span {
-      font-size: 12px;
-      padding: 6px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(229,231,235,0.3);
-      cursor: pointer;
-    }
-    .footer-bottom {
-      margin-top: 20px;
-      text-align: center;
-      font-size: 12px;
-      color: #9CA3AF;
-    }
-
-    /* Responsive */
-    @media (max-width: 900px) {
-      .hero-inner {
-        grid-template-columns: 1fr;
-      }
-      .features-grid,
-      .roadmap-grid,
-      .courses-grid,
-      .instructors-grid,
-      .testimonials-grid {
-        grid-template-columns: 1fr 1fr;
-      }
-    }
-    @media (max-width: 600px) {
-      nav { display: none; }
-      .features-grid,
-      .roadmap-grid,
-      .courses-grid,
-      .instructors-grid,
-      .testimonials-grid {
-        grid-template-columns: 1fr;
-      }
-      .header-inner {
-        justify-content: space-between;
-      }
-    }
+    /* CSS nằm ở phần 2 */
   </style>
 </head>
 <body>
 
-<header>
+<header class="header glass">
   <div class="container header-inner">
     <div class="logo">LMS<span>Nova</span></div>
     <nav>
       <ul>
         <li>Trang chủ</li>
         <li>Khóa học</li>
-        <li>Giảng viên</li>
-        <li>Lộ trình</li>
-        <li>Đánh giá</li>
-      </ul>
-    </nav>
-    <button class="btn-primary">Đăng ký ngay</button>
-  </div>
-</header>
-
-<main>
-  <!-- Hero -->
-  <section class="hero">
-    <div class="container hero-inner">
-      <div>
-        <h1 class="hero-title">
-          Nền tảng <span>LMS hiện đại</span><br>
-          cho đào tạo trực tuyến chuyên nghiệp
-        </h1>
-        <p class="hero-sub">
-          Quản lý khóa học, theo dõi tiến độ, cá nhân hóa lộ trình học tập – tất cả trên một nền tảng duy nhất.
-        </p>
-        <div class="hero-actions">
-          <button class="btn-primary">Bắt đầu học ngay</button>
-          <button class="btn-secondary">Xem demo hệ thống</button>
-        </div>
-        <div class="hero-meta">
-          <span>Học mọi lúc mọi nơi</span>
-          <span>Báo cáo chi tiết theo thời gian thực</span>
-          <span>Chứng chỉ tự động sau khi hoàn thành</span>
-        </div>
-      </div>
-      <div class="hero-visual">
-        <div class="hero-visual-inner">
-          <div>
-            <div class="hero-visual-title">Lộ trình học tập cá nhân hóa</div>
-            <div class="hero-visual-sub">Tiến độ khóa học: 68% hoàn thành</div>
-            <div class="hero-visual-progress">
-              <div class="progress-bar">
-                <div class="progress-fill"></div>
-              </div>
-            </div>
-          </div>
-          <div class="hero-visual-footer">
-            <span>Học viên: 1.250+</span>
-            <span class="hero-badge">Trực tuyến • Đa thiết bị</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Features -->
-  <section>
-    <div class="container">
-      <h2 class="section-title">Tính năng nổi bật</h2>
-      <p class="section-sub">Thiết kế dành cho đào tạo hiện đại – linh hoạt, trực quan, dễ mở rộng.</p>
-      <div class="features-grid">
-        <div class="feature-card">
-          <div class="feature-icon">📘</div>
-          <div class="feature-title">Quản lý khóa học thông minh</div>
-          <div class="feature-text">Tạo, phân phối và cập nhật nội dung học tập chỉ với vài thao tác.</div>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">🎧</div>
-          <div class="feature-title">Học tập đa thiết bị</div>
-          <div class="feature-text">Hỗ trợ máy tính, tablet, điện thoại – học mọi lúc mọi nơi.</div>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">📊</div>
-          <div class="feature-title">Theo dõi tiến độ chi tiết</div>
-          <div class="feature-text">Dashboard trực quan, báo cáo thời gian học, điểm số, tỷ lệ hoàn thành.</div>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">🏆</div>
-          <div class="feature-title">Gamification</div>
-          <div class="feature-text">Huy hiệu, điểm thưởng, bảng xếp hạng – tăng động lực học tập.</div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Roadmap -->
-  <section>
-    <div class="container">
-      <h2 class="section-title">Lộ trình học tập</h2>
-      <p class="section-sub">Từ làm quen hệ thống đến nhận chứng chỉ – tất cả đều được thiết kế rõ ràng.</p>
-      <div class="roadmap-grid">
-        <div class="roadmap-card">
-          <div class="roadmap-step">Bước 1</div>
-          <div class="roadmap-title">Khởi động</div>
-          <div class="roadmap-text">Đăng nhập, làm quen giao diện, cập nhật hồ sơ học viên.</div>
-        </div>
-        <div class="roadmap-card">
-          <div class="roadmap-step">Bước 2</div>
-          <div class="roadmap-title">Học nội dung</div>
-          <div class="roadmap-text">Video, tài liệu, bài tập tương tác, quiz kiểm tra nhanh.</div>
-        </div>
-        <div class="roadmap-card">
-          <div class="roadmap-step">Bước 3</div>
-          <div class="roadmap-title">Đánh giá</div>
-          <div class="roadmap-text">Bài kiểm tra tổng kết, chấm điểm tự động, phản hồi từ giảng viên.</div>
-        </div>
-        <div class="roadmap-card">
-          <div class="roadmap-step">Bước 4</div>
-          <div class="roadmap-title">Chứng chỉ & báo cáo</div>
-          <div class="roadmap-text">Nhận chứng chỉ, xem báo cáo tiến độ, đề xuất lộ trình tiếp theo.</div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Courses -->
-  <section>
-    <div class="container">
-      <h2 class="section-title">Khóa học nổi bật</h2>
-      <p class="section-sub">Những khóa học được thiết kế tối ưu cho trải nghiệm học tập trực tuyến.</p>
-      <div class="courses-grid">
-        <div class="course-card">
-          <div class="course-thumb"></div>
-          <div class="course-body">
-            <div class="course-title">Kỹ năng làm việc từ xa hiệu quả</div>
-            <div class="course-meta">
-              <span>12 bài học</span>
-              <span>Thời lượng: 6 giờ</span>
-            </div>
-            <button class="course-btn">Học ngay</button>
-          </div>
-        </div>
-        <div class="course-card">
-          <div class="course-thumb"></div>
-          <div class="course-body">
-            <div class="course-title">Giao tiếp chuyên nghiệp trong môi trường số</div>
-            <div class="course-meta">
-              <span>18 bài học</span>
-              <span>Thời lượng: 8 giờ</span>
-            </div>
-            <button class="course-btn">Học ngay</button>
-          </div>
-        </div>
-        <div class="course-card">
-          <div class="course-thumb"></div>
-          <div class="course-body">
-            <div class="course-title">Quản lý dự án Agile & Scrum cơ bản</div>
-            <div class="course-meta">
-              <span>15 bài học</span>
-              <span>Thời lượng: 7 giờ</span>
-            </div>
-            <button class="course-btn">Học ngay</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Instructors -->
-  <section>
-    <div class="container">
-      <h2 class="section-title">Giảng viên</h2>
-      <p class="section-sub">Đội ngũ giảng viên giàu kinh nghiệm, đồng hành cùng học viên trong suốt lộ trình.</p>
-      <div class="instructors-grid">
-        <div class="instructor-card">
-          <div class="instructor-avatar"></div>
-          <div class="instructor-name">Nguyễn Minh</div>
-          <div class="instructor-role">Chuyên gia đào tạo doanh nghiệp</div>
-          <div class="instructor-link">Xem hồ sơ</div>
-        </div>
-        <div class="instructor-card">
-          <div class="instructor-avatar"></div>
-          <div class="instructor-name">Lê Anh</div>
-          <div class="instructor-role">Giảng viên kỹ năng mềm</div>
-          <div class="instructor-link">Xem hồ sơ</div>
-        </div>
-        <div class="instructor-card">
-          <div class="instructor-avatar"></div>
-          <div class="instructor-name">Trần Phương</div>
-          <div class="instructor-role">Chuyên gia quản lý dự án</div>
-          <div class="instructor-link">Xem hồ sơ</div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Testimonials -->
-  <section>
-    <div class="container">
-      <h2 class="section-title">Đánh giá từ học viên</h2>
-      <p class="section-sub">Những trải nghiệm thực tế từ người đã sử dụng hệ thống LMS.</p>
-      <div class="testimonials-grid">
-        <div class="testimonial-card">
-          <div class="testimonial-quote">
-            “Giao diện dễ dùng, nội dung rõ ràng, tôi có thể theo dõi tiến độ học tập của mình rất chi tiết.”
-          </div>
-          <div class="testimonial-user">Học viên: Lan Anh</div>
-          <div class="testimonial-role">Nhân viên văn phòng</div>
-          <div class="testimonial-stars">★★★★★</div>
-        </div>
-        <div class="testimonial-card">
-          <div class="testimonial-quote">
-            “LMS giúp đội ngũ của chúng tôi tiết kiệm rất nhiều thời gian trong việc đào tạo nội bộ.”
-          </div>
-          <div class="testimonial-user">Quản lý: Hoàng Nam</div>
-          <div class="testimonial-role">Trưởng phòng nhân sự</div>
-          <div class="testimonial-stars">★★★★★</div>
-        </div>
-      </div>
-    </div>
-  </section>
-</main>
-
-<footer>
-  <div class="container footer-inner">
-    <div>
-      <div class="footer-logo">LMS<span>Nova</span></div>
-      <p>Nền tảng quản lý học tập trực tuyến dành cho doanh nghiệp, trường học và tổ chức đào tạo.</p>
-      <div class="footer-social">
-        <span>Facebook</span>
-        <span>LinkedIn</span>
-        <span>Youtube</span>
-      </div>
-    </div>
-    <div class="footer-links">
-      <h4>Liên kết</h4>
-      <ul>
-        <li>Giới thiệu</li>
-        <li>Khóa học</li>
+        <li>Dashboard</li>
         <li>Giảng viên</li>
         <li>Liên hệ</li>
       </ul>
+    </nav>
+    <button class="btn-primary">Đăng nhập</button>
+  </div>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="container hero-inner">
+    <div data-aos="fade-right">
+      <h1 class="hero-title">
+        Nền tảng <span>LMS hiện đại</span><br>
+        dành cho đào tạo chuyên nghiệp
+      </h1>
+      <p class="hero-sub">
+        Học tập cá nhân hóa, theo dõi tiến độ, nhận chứng chỉ tự động.
+      </p>
+      <div class="hero-actions">
+        <button class="btn-primary">Bắt đầu học</button>
+        <button class="btn-secondary">Xem demo</button>
+      </div>
     </div>
-    <div class="footer-links">
-      <h4>Hỗ trợ</h4>
-      <ul>
-        <li>Câu hỏi thường gặp</li>
-        <li>Chính sách bảo mật</li>
-        <li>Điều khoản sử dụng</li>
-      </ul>
+
+    <div class="hero-animation" data-aos="fade-left">
+      <lottie-player 
+        src="https://assets4.lottiefiles.com/packages/lf20_q5pk6p1k.json"
+        background="transparent"
+        speed="1"
+        loop
+        autoplay>
+      </lottie-player>
     </div>
   </div>
-  <div class="footer-bottom">
-    © 2026 LMSNova. All rights reserved.
+</section>
+
+<!-- DASHBOARD -->
+<section class="dashboard">
+  <div class="container">
+    <h2 class="section-title" data-aos="fade-up">Dashboard học tập</h2>
+
+    <div class="dashboard-grid">
+
+      <div class="dash-card" data-aos="zoom-in">
+        <h3>Tiến độ học tập</h3>
+        <div class="progress-circle"></div>
+        <p>Hoàn thành: <strong>68%</strong></p>
+      </div>
+
+      <div class="dash-card" data-aos="zoom-in">
+        <h3>Khóa học đang học</h3>
+        <p>4 khóa học</p>
+      </div>
+
+      <div class="dash-card" data-aos="zoom-in">
+        <h3>Thời gian học tuần này</h3>
+        <p>5 giờ 32 phút</p>
+      </div>
+
+      <div class="dash-card" data-aos="zoom-in">
+        <h3>Chứng chỉ đã nhận</h3>
+        <p>2 chứng chỉ</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- COURSES -->
+<section class="courses">
+  <div class="container">
+    <h2 class="section-title" data-aos="fade-up">Khóa học nổi bật</h2>
+
+    <div class="courses-grid">
+
+      <div class="course-card" data-aos="fade-up">
+        <div class="course-thumb"></div>
+        <div class="course-body">
+          <h3>Kỹ năng làm việc từ xa</h3>
+          <button class="course-btn">Học ngay</button>
+        </div>
+      </div>
+
+      <div class="course-card" data-aos="fade-up">
+        <div class="course-thumb"></div>
+        <div class="course-body">
+          <h3>Giao tiếp chuyên nghiệp</h3>
+          <button class="course-btn">Học ngay</button>
+        </div>
+      </div>
+
+      <div class="course-card" data-aos="fade-up">
+        <div class="course-thumb"></div>
+        <div class="course-body">
+          <h3>Quản lý dự án Agile</h3>
+          <button class="course-btn">Học ngay</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="container footer-inner">
+    <div class="footer-logo">LMS<span>Nova</span></div>
+    <p>Hệ thống học tập trực tuyến hiện đại.</p>
   </div>
 </footer>
+
+<!-- AOS Script -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js"></script>
+<script>
+  AOS.init();
+</script>
 
 </body>
 </html>
