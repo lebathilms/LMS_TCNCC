@@ -9,8 +9,9 @@
         .list-group-item.active small { color: rgba(255,255,255,0.8) !important; }
         .style-desc { font-size: 0.85rem; margin-top: 4px; }
         .nav-tabs .nav-link { cursor: pointer; font-weight: bold; }
-        .quiz-option { display: block; margin-bottom: 8px; cursor: pointer; padding: 8px; border: 1px solid #dee2e6; border-radius: 4px; }
-        .quiz-option:hover { background-color: #f8f9fa; }
+        .quiz-option { display: block; margin-bottom: 8px; cursor: pointer; padding: 12px; border: 1px solid #dee2e6; border-radius: 6px; transition: 0.2s; }
+        .quiz-option:hover { background-color: #f1f8f5; border-color: #198754; }
+        .quiz-option input { margin-right: 8px; }
     </style>
 </head>
 <body>
@@ -41,7 +42,7 @@
                 <div id="main-content-container">
                     <div class="alert alert-info text-center p-5 shadow-sm">
                         <h4 class="alert-heading">Chào Thầy và các em học sinh!</h4>
-                        <p class="m-0">Vui lòng chọn một môn học ở danh mục bên trái để hiển thị học liệu và bài kiểm tra.</p>
+                        <p class="m-0">Vui lòng chọn một môn học ở danh mục bên trái để hiển thị học liệu và bài kiểm tra tương ứng.</p>
                     </div>
                 </div>
             </div>
@@ -49,16 +50,17 @@
     </div>
 
     <script>
-        // 🛠️ ĐIỀN ID FILE GOOGLE SHEET CỦA ANH VÀO ĐÂY
-        const SHEET_ID = '1Hh-JSTQvt7y-Yr0I1U-6aoRaoJwX4Kb_1kBl-7OdX28';
+        // 💾 CẤU HÌNH ĐỒNG BỘ ĐÁM MÂY TỰ ĐỘNG
+        const SHEET_ID = '1Hh-JSTQvt7y-Yr0I1U-6aoRaoJwX4Kb_1kBl-7OdX28'; 
+        const SCRIPT_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycby-XBrvV-aDp9gvBIKX8Xhd2GdcU5Llu_BDkPpXc9p4AXeh7ZrXJVuzpFpyBShuPnQ_/exec'; 
         
         let allCourses = [];
         let allLessons = [];
         let allQuestions = [];
         let currentCourseId = null;
-        let currentTab = 'lessons'; // Mặc định hiển thị tab bài học
+        let currentCourseTitle = '';
+        let currentTab = 'lessons'; 
 
-        // Hàm xử lý cắt chuỗi CSV thông minh
         function parseCSV(text) {
             let lines = [];
             let row = [""];
@@ -92,18 +94,14 @@
             });
         }
 
-        // Tải toàn bộ dữ liệu từ Google Sheets Cloud
         async function loadDataFromCloud() {
             try {
-                // Tải khóa học
                 const resCourses = await fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=courses`);
                 allCourses = parseCSV(await resCourses.text());
 
-                // Tải bài học
                 const resLessons = await fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=lessons`);
                 allLessons = parseCSV(await resLessons.text());
 
-                // Tải ngân hàng câu hỏi trắc nghiệm
                 const resQuestions = await fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=quiz_questions`);
                 allQuestions = parseCSV(await resQuestions.text());
 
@@ -116,21 +114,22 @@
         function renderCourses() {
             const listContainer = document.getElementById('course-list');
             if (allCourses.length === 0) {
-                listContainer.innerHTML = '<div class="p-3 text-center text-muted">Chưa có dữ liệu khóa học.</div>';
+                listContainer.innerHTML = '<div class="p-3 text-center text-muted">Chưa có dữ liệu môn học.</div>';
                 return;
             }
             let html = '';
             allCourses.forEach(course => {
                 const activeClass = currentCourseId == course.id ? 'active' : '';
-                html += `<button onclick="selectCourse(${course.id})" class="list-group-item list-group-item-action p-3 ${activeClass}"><h6 class="mb-1 fw-bold">${course.title}</h6><small class="d-block text-muted style-desc">${course.description || ''}</small></button>`;
+                html += `<button onclick="selectCourse(${course.id}, '${course.title.replace(/'/g, "\\'")}')" class="list-group-item list-group-item-action p-3 ${activeClass}"><h6 class="mb-1 fw-bold">${course.title}</h6><small class="d-block text-muted style-desc">${course.description || ''}</small></button>`;
             });
             listContainer.innerHTML = html;
         }
 
-        function selectCourse(courseId) {
+        function selectCourse(courseId, courseTitle) {
             currentCourseId = courseId;
+            currentCourseTitle = courseTitle;
             renderCourses();
-            document.getElementById('contentTabs').style.display = 'flex'; // Hiển thị thanh Tab điều hướng
+            document.getElementById('contentTabs').style.display = 'flex'; 
             updateDisplay();
         }
 
@@ -143,7 +142,6 @@
 
         function updateDisplay() {
             if (!currentCourseId) return;
-            
             if (currentTab === 'lessons') {
                 renderLessons();
             } else if (currentTab === 'quiz') {
@@ -151,14 +149,13 @@
             }
         }
 
-        // Hiển thị phần bài học lý thuyết
         function renderLessons() {
             const container = document.getElementById('main-content-container');
             const filteredLessons = allLessons.filter(l => l.course_id == currentCourseId);
 
-            let html = '<h5 class="mb-3 text-secondary border-bottom pb-2">Nội dung chi tiết bài học</h5>';
+            let html = `<h5 class="mb-3 text-secondary border-bottom pb-2">Nội dung bài học: ${currentCourseTitle}</h5>`;
             if (filteredLessons.length === 0) {
-                html += '<div class="alert alert-warning">Môn học này hiện chưa cập nhật bài học.</div>';
+                html += '<div class="alert alert-warning">Môn học này hiện chưa cập nhật bài học lý thuyết.</div>';
             } else {
                 filteredLessons.forEach(lesson => {
                     let cleanContent = lesson.content.replace(/\\\\n/g, '\n').replace(/\\n/g, '\n');
@@ -176,20 +173,18 @@
             container.innerHTML = html;
         }
 
-        // Hiển thị phần làm bài trắc nghiệm
         function renderQuiz() {
             const container = document.getElementById('main-content-container');
             const filteredQuestions = allQuestions.filter(q => q.course_id == currentCourseId);
 
-            let html = '<h5 class="mb-3 text-secondary border-bottom pb-2">Bài kiểm tra trắc nghiệm kiến thức</h5>';
+            let html = `<h5 class="mb-3 text-secondary border-bottom pb-2">Bài kiểm tra trắc nghiệm: ${currentCourseTitle}</h5>`;
             
             if (filteredQuestions.length === 0) {
-                html += '<div class="alert alert-warning">Môn học này hiện chưa có câu hỏi kiểm tra.</div>';
+                html += '<div class="alert alert-warning">Môn học này hiện chưa được cấu hình câu hỏi trắc nghiệm.</div>';
                 container.innerHTML = html;
                 return;
             }
 
-            // Giao diện nhập thông tin học sinh
             html += `
                 <div class="card card-body bg-light mb-4 shadow-sm">
                     <h6 class="fw-bold text-dark mb-3">Thông tin học sinh làm bài:</h6>
@@ -205,33 +200,23 @@
                 <form id="quiz-form" onsubmit="submitQuiz(event)">
             `;
 
-            // Đổ danh sách câu hỏi và tự động xuống dòng các phương án A, B, C, D rõ ràng
             filteredQuestions.forEach((q, index) => {
                 html += `
-                    <div class="card mb-3 shadow-sm question-block" data-qid="${q.id}" data-correct="${q.answer}">
+                    <div class="card mb-3 shadow-sm">
                         <div class="card-body">
                             <p class="fw-bold text-dark mb-3">Câu ${index + 1}: ${q.question}</p>
-                            
-                            <label class="quiz-option">
-                                <input type="radio" name="question_${q.id}" value="A" required> <strong>A.</strong> ${q.option_a}
-                            </label>
-                            <label class="quiz-option">
-                                <input type="radio" name="question_${q.id}" value="B"> <strong>B.</strong> ${q.option_b}
-                            </label>
-                            <label class="quiz-option">
-                                <input type="radio" name="question_${q.id}" value="C"> <strong>C.</strong> ${q.option_c}
-                            </label>
-                            <label class="quiz-option">
-                                <input type="radio" name="question_${q.id}" value="D"> <strong>D.</strong> ${q.option_d}
-                            </label>
+                            <label class="quiz-option"><input type="radio" name="question_${q.id}" value="A" required> <strong>A.</strong> ${q.option_a}</label>
+                            <label class="quiz-option"><input type="radio" name="question_${q.id}" value="B"> <strong>B.</strong> ${q.option_b}</label>
+                            <label class="quiz-option"><input type="radio" name="question_${q.id}" value="C"> <strong>C.</strong> ${q.option_c}</label>
+                            <label class="quiz-option"><input type="radio" name="question_${q.id}" value="D"> <strong>D.</strong> ${q.option_d}</label>
                         </div>
                     </div>
                 `;
             });
 
             html += `
-                    <div class="text-center mt-4">
-                        <button type="submit" class="btn btn-primary btn-lg px-5 fw-bold shadow">Nộp Bài Kiểm Tra</button>
+                    <div class="text-center mt-4" id="submit-zone">
+                        <button type="submit" id="btn-submit-quiz" class="btn btn-primary btn-lg px-5 fw-bold shadow">Nộp Bài Kiểm Tra</button>
                     </div>
                 </form>
                 <div id="quiz-result-alert" class="mt-4" style="display:none;"></div>
@@ -239,16 +224,19 @@
             container.innerHTML = html;
         }
 
-        // Xử lý tính điểm trắc nghiệm tự động
-        function submitQuiz(e) {
+        async function submitQuiz(e) {
             e.preventDefault();
             const name = document.getElementById('student_name').value.trim();
             const sClass = document.getElementById('student_class').value.trim();
+            const btnSubmit = document.getElementById('btn-submit-quiz');
             
             if(!name || !sClass) {
                 alert("Vui lòng điền đầy đủ Họ tên và Lớp trước khi nộp bài!");
                 return;
             }
+
+            btnSubmit.disabled = true;
+            btnSubmit.innerText = "Chấm điểm và lưu kết quả...";
 
             const filteredQuestions = allQuestions.filter(q => q.course_id == currentCourseId);
             let score = 0;
@@ -261,22 +249,41 @@
                 }
             });
 
-            // Tính điểm thang hệ 10
             let finalGrade = ((score / total) * 10).toFixed(1);
 
-            // Hiển thị kết quả trực quan trên màn hình
             const resultDiv = document.getElementById('quiz-result-alert');
             resultDiv.style.display = 'block';
             resultDiv.className = `alert ${finalGrade >= 5 ? 'alert-success' : 'alert-danger'} text-center shadow p-4`;
             resultDiv.innerHTML = `
                 <h4 class="fw-bold">KẾT QUẢ CỦA: ${name.toUpperCase()} - LỚP: ${sClass.toUpperCase()}</h4>
                 <p class="fs-5 m-0">Số câu đúng: <strong>${score}/${total}</strong> câu.</p>
-                <h2 class="display-5 fw-bold mt-2 text-primary">${finalGrade} Điểm</h2>
-                <p class="text-muted small mt-2 m-0">(Hệ thống đang lưu điểm số tự động vào cơ sở dữ liệu của Thầy...)</p>
+                <h2 class="display-5 fw-bold mt-2 text-primary" id="grade-display">${finalGrade} Điểm</h2>
+                <p class="text-muted small mt-2 m-0" id="sync-status">⏳ Đang đồng bộ điểm số lên đám mây của Thầy...</p>
             `;
-
-            // Cuộn màn hình xuống xem kết quả điểm
             resultDiv.scrollIntoView({ behavior: 'smooth' });
+
+            // 🚀 GỬI ĐIỂM THỜI GIAN THỰC LÊN GOOGLE SHEETS
+            try {
+                const payload = {
+                    student_name: name,
+                    student_class: sClass,
+                    course_title: currentCourseTitle,
+                    score: parseFloat(finalGrade)
+                };
+
+                await fetch(SCRIPT_WEB_APP_URL, {
+                    method: 'POST',
+                    mode: 'no-cors', 
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                document.getElementById('sync-status').innerHTML = "✅ Điểm số đã được lưu an toàn vào Google Sheets thành công!";
+                document.getElementById('sync-status').className = "text-success fw-bold small mt-2 m-0";
+            } catch (err) {
+                document.getElementById('sync-status').innerHTML = "❌ Lỗi đồng bộ đám mây, vui lòng chụp ảnh màn hình báo lại cho Thầy.";
+                document.getElementById('sync-status').className = "text-danger fw-bold small mt-2 m-0";
+            }
         }
 
         window.onload = loadDataFromCloud;
