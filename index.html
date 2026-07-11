@@ -11,18 +11,15 @@
         .style-desc { font-size: 0.85rem; margin-top: 4px; }
         .nav-tabs .nav-link { cursor: pointer; font-weight: bold; }
         
-        /* Giao diện Phiếu thi Điện tử 3 Phần */
         .phieu-container { border: 2px dashed #dc3545; padding: 25px; border-radius: 12px; background-color: #fffdfd; margin-top: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         .part-indicator { background-color: #dc3545; color: white; padding: 4px 12px; font-weight: bold; font-size: 0.9rem; border-radius: 20px; display: inline-block; margin-bottom: 15px; }
         
-        /* Cấu trúc nút bấm lựa chọn đáp án Phần I */
         .opt-grid { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
         .opt-box { border: 1px solid #ced4da; padding: 12px 20px; text-align: left; border-radius: 8px; cursor: pointer; transition: 0.2s; font-weight: 500; background-color: white; display: flex; align-items: center; }
         .opt-box:hover { background-color: #fff5f5; border-color: #feb2b2; }
         .opt-box.selected { background-color: #dc3545; color: white; border-color: #dc3545; font-weight: bold; box-shadow: 0 4px 10px rgba(220,53,69,0.3); }
         .opt-prefix { width: 30px; height: 30px; border-radius: 50%; border: 2px solid currentColor; display: inline-flex; align-items: center; justify-content: center; margin-right: 15px; font-weight: bold; }
         
-        /* Cấu trúc Đúng Sai Phần II */
         .tf-row { border-bottom: 1px dashed #dee2e6; padding: 12px 0; display: flex; align-items: center; justify-content: space-between; gap: 15px; }
         .tf-row:last-child { border-bottom: none; }
         .tf-btn { min-width: 75px; padding: 6px; text-align: center; border: 1px solid #ced4da; border-radius: 6px; cursor: pointer; display: inline-block; font-size: 0.9rem; font-weight: bold; background-color: white; transition: 0.2s; }
@@ -30,10 +27,8 @@
         .tf-btn.selected-true { background-color: #198754; color: white; border-color: #198754; box-shadow: 0 3px 8px rgba(25,135,84,0.3); }
         .tf-btn.selected-false { background-color: #dc3545; color: white; border-color: #dc3545; box-shadow: 0 3px 8px rgba(220,53,69,0.3); }
         
-        /* Cấu trúc Điền số Phần III */
         .num-fill-box { width: 100%; max-width: 250px; font-weight: bold; font-size: 1.3rem; color: #0d6efd; border: 2px solid #0d6efd; text-align: center; padding: 8px; border-radius: 8px; }
         
-        /* Bản đồ câu hỏi */
         .q-number-badge { cursor: pointer; width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center; margin: 4px; border-radius: 6px; font-weight: bold; font-size: 0.95rem; border: 1px solid #ced4da; transition: 0.2s; }
         .q-number-badge.answered { background-color: #0d6efd; color: white; border-color: #0d6efd; }
         .q-number-badge.current { background-color: #ffc107; color: #212529; border-color: #ffc107; box-shadow: 0 0 0 3px rgba(255,193,7,0.4); }
@@ -94,13 +89,13 @@
         let currentTab = 'lessons'; let timerInterval = null;
         let currentStudentName = ""; let currentStudentClass = "";
 
-        // Biến điều khiển phân trang thi từng câu một
         let selectedQuestions = [];
         let studentAnswers = { part1: {}, part2: {}, part3: {} };
         let currentQuestionIndex = 0;
 
         function parseCSV(text) {
-            text = text.replace(/^\uFEFF/, '');
+            // Dọn dẹp tuyệt đối mọi ký tự ẩn gây lỗi ID
+            text = text.replace(/[\u200B-\u200D\uFEFF]/g, '');
             let lines = []; let row = [""]; let inQuotes = false;
             for (let i = 0; i < text.length; i++) {
                 let c = text[i]; let next = text[i+1];
@@ -116,6 +111,7 @@
             }
             if (row.length > 1 || row[0] !== '') lines.push(row);
             if (lines.length === 0) return [];
+            
             const headers = lines[0].map(h => h.trim().toLowerCase());
             return lines.slice(1).map(line => {
                 const obj = {}; headers.forEach((header, index) => { obj[header] = line[index] ? line[index].trim() : ''; });
@@ -139,6 +135,8 @@
 
         function renderCourses() {
             const listContainer = document.getElementById('course-list');
+            if (allCourses.length === 0) { listContainer.innerHTML = '<div class="p-3 text-center text-muted">Chưa có dữ liệu.</div>'; return; }
+            
             let html = '';
             allCourses.forEach(course => {
                 let cid = String(course.id || "").trim();
@@ -149,8 +147,13 @@
 
         function selectCourse(courseId) {
             clearInterval(timerInterval); 
-            currentCourseId = String(courseId).trim();
-            currentCourseObj = allCourses.find(c => String(c.id).trim() === currentCourseId);
+            let cid = String(courseId || "").trim();
+            
+            currentCourseObj = allCourses.find(c => String(c.id || "").trim() === cid);
+            if (!currentCourseObj && allCourses.length > 0) { currentCourseObj = allCourses[0]; }
+            
+            currentCourseId = String(currentCourseObj.id || "").trim();
+
             renderCourses();
             document.getElementById('contentTabs').style.display = 'flex'; 
             updateDisplay();
@@ -163,9 +166,17 @@
             updateDisplay();
         }
 
+        // HÀM UPDATE ĐÃ ĐƯỢC CHỮA LỖI ĐÓNG BĂNG GIAO DIỆN
+        function updateDisplay() {
+            if (!currentCourseObj) return; 
+            if (currentTab === 'lessons') { renderLessons(); } 
+            else if (currentTab === 'quiz') { renderQuizPrepare(); }
+        }
+
         function renderLessons() {
             const container = document.getElementById('main-content-container');
-            const filteredLessons = allLessons.filter(l => String(l.course_id).trim() === currentCourseId);
+            const filteredLessons = allLessons.filter(l => String(l.course_id || "").trim() === currentCourseId);
+            
             let html = `<h5 class="mb-4 text-secondary border-bottom pb-3 fw-bold">Bài học: <span class="text-primary">${currentCourseObj.title}</span></h5>`;
             if (filteredLessons.length === 0) {
                 html += '<div class="alert alert-warning">Môn học này hiện chưa cập nhật bài học lý thuyết.</div>';
@@ -186,7 +197,7 @@
 
         function renderQuizPrepare() {
             const container = document.getElementById('main-content-container');
-            const filteredQuestions = allQuestions.filter(q => String(q.course_id).trim() === currentCourseId);
+            const filteredQuestions = allQuestions.filter(q => String(q.course_id || "").trim() === currentCourseId);
             const maxAllowed = filteredQuestions.length;
             const defaultLimit = Math.min(20, maxAllowed);
             const qTime = currentCourseObj.quiz_time || 15;
@@ -205,7 +216,7 @@
                         <div class="col-12 p-3 mt-4 bg-white border rounded shadow-sm">
                             <label class="form-label fw-bold text-danger">Số lượng câu hỏi trộn đề thi (Gói đề):</label>
                             <input type="number" id="quiz_custom_limit" class="form-control border-danger fw-bold text-center fs-5" value="${defaultLimit}" min="1" max="${maxAllowed}">
-                            <small class="text-muted d-block mt-2">* Hệ thống tự bốc ngẫu nhiên câu hỏi từ ngân hàng đề của Thầy và sắp xếp gọn gàng theo chuẩn 3 phần biệt lập. Tối đa: ${maxAllowed} câu.</small>
+                            <small class="text-muted d-block mt-2">* Tối đa: ${maxAllowed} câu trong ngân hàng đề.</small>
                         </div>
                     </div>
                     <div class="text-center mt-5"><button onclick="startDigitalExam()" class="btn btn-danger btn-lg px-5 py-3 fw-bold shadow rounded-pill fs-5">🚀 Bắt Đầu Làm Bài</button></div>
@@ -218,18 +229,15 @@
             const sClass = document.getElementById('student_class').value.trim();
             const limitInput = parseInt(document.getElementById('quiz_custom_limit').value);
             
-            const filteredQuestions = allQuestions.filter(q => String(q.course_id).trim() === currentCourseId);
+            const filteredQuestions = allQuestions.filter(q => String(q.course_id || "").trim() === currentCourseId);
             if(!name || !sClass) { alert("Vui lòng điền đủ Họ tên và Lớp!"); return; }
-            if(!limitInput || limitInput < 1 || limitInput > filteredQuestions.length) { alert("Số lượng gói câu hỏi không hợp lệ!"); return; }
+            if(!limitInput || limitInput < 1 || limitInput > filteredQuestions.length) { alert("Số lượng câu hỏi không hợp lệ!"); return; }
 
             currentStudentName = name; currentStudentClass = sClass;
             studentAnswers = { part1: {}, part2: {}, part3: {} };
             currentQuestionIndex = 0;
 
-            // 🎯 THUẬT TOÁN TRỘN ĐỀ THÔNG MINH: Bốc ngẫu nhiên theo gói chọn và phân nhóm 3 phần
             let shuffledPool = filteredQuestions.sort(() => 0.5 - Math.random()).slice(0, limitInput);
-            
-            // Xếp thứ tự chuẩn mẫu: Phần 1 -> Phần 2 -> Phần 3
             selectedQuestions = shuffledPool.sort((a, b) => {
                 let pA = String(a.part || '1').trim(); let pB = String(b.part || '1').trim();
                 return pA.localeCompare(pB);
@@ -249,7 +257,7 @@
                 </div>
                 
                 <div class="card p-3 mb-4 bg-light border-0 shadow-sm">
-                    <div class="fw-bold small text-muted mb-2">Bản đồ câu hỏi phiếu điện tử (Bấm vào số để nhảy nhanh tới câu đó):</div>
+                    <div class="fw-bold small text-muted mb-2">Bản đồ câu hỏi (Bấm vào số để nhảy nhanh):</div>
                     <div id="quiz-question-map"></div>
                 </div>
 
@@ -259,7 +267,7 @@
                     <button id="btn-prev-q" onclick="navigateQuestion(-1)" class="btn btn-secondary fw-bold px-4 py-2">⬅ Câu trước</button>
                     <span class="fw-bold text-muted fs-5" id="q-index-indicator"></span>
                     <button id="btn-next-q" onclick="navigateQuestion(1)" class="btn btn-success fw-bold px-4 py-2">Câu tiếp theo ➡</button>
-                    <button id="btn-submit-single" onclick="submitPhieuExam()" class="btn btn-primary btn-lg fw-bold px-5 shadow rounded-pill" style="display:none;">💾 NỘP PHIẾU BÀI THI</button>
+                    <button id="btn-submit-single" onclick="submitPhieuExam()" class="btn btn-primary btn-lg fw-bold px-5 shadow rounded-pill" style="display:none;">💾 NỘP BÀI THI</button>
                 </div>`;
 
             displayActiveQuestion();
@@ -280,7 +288,6 @@
                 let partStr = String(q.part || '1').trim();
                 
                 if (partStr === '2') {
-                    // Đối với phần 2 (Đúng/Sai), kiểm tra xem có ý con nào được chọn chưa
                     let hasAns = ['a','b','c','d'].some(sub => studentAnswers.part2[`${q.id}_${sub}`] || studentAnswers.part2[q.id]);
                     if (hasAns) status = 'answered';
                 } else if (partStr === '3') {
@@ -295,7 +302,6 @@
             mapContainer.innerHTML = html;
         }
 
-        // 🛠️ HÀM HIỂN THỊ CÂU HỎI THÔNG MINH - TỰ ĐỘNG KHỚP CẤU TRÚC THEO PHẦN CỦA CÂU ĐÓ
         function displayActiveQuestion() {
             const zone = document.getElementById('active-question-zone');
             const q = selectedQuestions[currentQuestionIndex];
@@ -303,7 +309,6 @@
             let html = '';
 
             if (partStr === '2') {
-                // ĐỊNH DẠNG MẪU PHẦN II: TRẮC NGHIỆM ĐÚNG / SAI
                 html += `<div class="part-indicator bg-danger">PHẦN II. Câu hỏi trắc nghiệm Đúng/Sai</div>`;
                 let subOptions = (q.question || "").replace(/\\\\n/g, '\n').replace(/\\n/g, '\n').split('\n');
                 let titleQ = subOptions[0];
@@ -313,7 +318,7 @@
                 if(subOptions.length > 1) {
                     for(let i = 1; i < subOptions.length; i++) {
                         if(!subOptions[i].trim()) continue;
-                        let subChar = String.fromCharCode(96 + i); // a, b, c, d
+                        let subChar = String.fromCharCode(96 + i);
                         let currentSelected = studentAnswers.part2[`${q.id}_${subChar}`] || "";
                         html += `
                             <div class="tf-row">
@@ -336,7 +341,6 @@
                         </div>`;
                 }
             } else if (partStr === '3') {
-                // ĐỊNH DẠNG MẪU PHẦN III: TỰ LUẬN ĐIỀN ĐÁP ÁN NGẮN
                 let currentVal = studentAnswers.part3[q.id] || "";
                 html += `
                     <div class="part-indicator bg-primary">PHẦN III. Câu hỏi trả lời ngắn (Điền số/từ khóa)</div>
@@ -346,16 +350,15 @@
                         <input type="text" id="p3_input_field" oninput="savePart3('${q.id}', this.value)" class="form-control num-fill-box mx-auto" value="${currentVal}" placeholder="Gõ đáp án vào...">
                     </div>`;
             } else {
-                // ĐỊNH DẠNG MẪU PHẦN I: TRẮC NGHIỆM 4 ĐÁP ÁN A, B, C, D
                 let currentSelected = studentAnswers.part1[q.id] || "";
                 html += `
                     <div class="part-indicator bg-success">PHẦN I. Câu hỏi trắc nghiệm 4 lựa chọn</div>
                     <h4 class="fw-bold text-dark mb-3"><span class="text-primary">Câu ${currentQuestionIndex + 1}:</span> ${q.question}</h4>
                     <div class="opt-grid">
-                        <div onclick="selectPart1('${q.id}','A')" class="opt-box ${currentSelected === 'A' ? 'selected' : ''}"><span class="opt-prefix">A</span>${q.option_a}</div>
-                        <div onclick="selectPart1('${q.id}','B')" class="opt-box ${currentSelected === 'B' ? 'selected' : ''}"><span class="opt-prefix">B</span>${q.option_b}</div>
-                        <div onclick="selectPart1('${q.id}','C')" class="opt-box ${currentSelected === 'C' ? 'selected' : ''}"><span class="opt-prefix">C</span>${q.option_c}</div>
-                        <div onclick="selectPart1('${q.id}','D')" class="opt-box ${currentSelected === 'D' ? 'selected' : ''}"><span class="opt-prefix">D</span>${q.option_d}</div>
+                        <div onclick="selectPart1('${q.id}','A')" class="opt-box ${currentSelected === 'A' ? 'selected' : ''}"><span class="opt-prefix">A</span>${q.option_a || ""}</div>
+                        <div onclick="selectPart1('${q.id}','B')" class="opt-box ${currentSelected === 'B' ? 'selected' : ''}"><span class="opt-prefix">B</span>${q.option_b || ""}</div>
+                        <div onclick="selectPart1('${q.id}','C')" class="opt-box ${currentSelected === 'C' ? 'selected' : ''}"><span class="opt-prefix">C</span>${q.option_c || ""}</div>
+                        <div onclick="selectPart1('${q.id}','D')" class="opt-box ${currentSelected === 'D' ? 'selected' : ''}"><span class="opt-prefix">D</span>${q.option_d || ""}</div>
                     </div>`;
             }
 
@@ -373,87 +376,48 @@
             renderQuestionMap();
         }
 
-        function selectPart1(qid, opt) { studentAnswers.part1[qid] = opt; displayActiveQuestion(); }
+        function selectPart1(qid, opt) { ['A','B','C','D'].forEach(o => { const el = document.getElementById(`p1_${qid}_${o}`); if(el) el.classList.remove('selected'); }); document.getElementById(`p1_${qid}_${opt}`).classList.add('selected'); studentAnswers.part1[qid] = opt; displayActiveQuestion(); }
         function selectPart2(key, val) { studentAnswers.part2[key] = val; displayActiveQuestion(); }
         function savePart3(qid, val) { studentAnswers.part3[qid] = String(val).trim(); }
         
-        function navigateQuestion(step) {
-            currentQuestionIndex += step;
-            displayActiveQuestion();
-        }
-        function jumpToQuestion(idx) {
-            currentQuestionIndex = idx;
-            displayActiveQuestion();
-        }
+        function navigateQuestion(step) { currentQuestionIndex += step; displayActiveQuestion(); }
+        function jumpToQuestion(idx) { currentQuestionIndex = idx; displayActiveQuestion(); }
 
-        // CHẤM ĐIỂM VÀ ĐỒNG BỘ ĐÁM MÂY KHI NỘP PHIẾU
         function submitPhieuExam() {
-            if(!confirm("Em có chắc chắn muốn nộp phiếu làm bài thi này không?")) return;
+            if(!confirm("Em có chắc chắn muốn nộp bài thi này không?")) return;
             clearInterval(timerInterval);
             
-            let p1Correct = 0; let p2Correct = 0; let p3Correct = 0;
-            let totalGradedUnits = 0; // Đếm tổng các đơn vị điểm thành phần để chia điểm tối thiểu 0.25đ
-
+            let p1Correct = 0; let p2Correct = 0; let p3Correct = 0; let totalGradedUnits = 0; 
             selectedQuestions.forEach(q => {
-                let partStr = String(q.part || '1').trim();
-                let correctAns = String(q.answer || "").trim().toUpperCase();
-                
+                let partStr = String(q.part || '1').trim(); let correctAns = String(q.answer || "").trim().toUpperCase();
                 if (partStr === '2') {
                     let ansArray = correctAns.split('|');
                     if (ansArray.length > 1) {
-                        ansArray.forEach((ans, index) => {
-                            totalGradedUnits++;
-                            let subChar = String.fromCharCode(97 + index);
-                            if(studentAnswers.part2[`${q.id}_${subChar}`] === ans.trim()) p2Correct++;
-                        });
-                    } else {
-                        totalGradedUnits++;
-                        if(studentAnswers.part2[q.id] === ansArray[0].trim()) p2Correct++;
-                    }
+                        ansArray.forEach((ans, index) => { totalGradedUnits++; let subChar = String.fromCharCode(97 + index); if(studentAnswers.part2[`${q.id}_${subChar}`] === ans.trim()) p2Correct++; });
+                    } else { totalGradedUnits++; if(studentAnswers.part2[q.id] === ansArray[0].trim()) p2Correct++; }
                 } else if (partStr === '3') {
-                    totalGradedUnits++;
-                    let userAns = String(studentAnswers.part3[q.id] || "").trim().toUpperCase();
-                    if(userAns === correctAns && userAns !== "") p3Correct++;
+                    totalGradedUnits++; let userAns = String(studentAnswers.part3[q.id] || "").trim().toUpperCase(); if(userAns === correctAns && userAns !== "") p3Correct++;
                 } else {
-                    totalGradedUnits++;
-                    if(studentAnswers.part1[q.id] === correctAns) p1Correct++;
+                    totalGradedUnits++; if(studentAnswers.part1[q.id] === correctAns) p1Correct++;
                 }
             });
 
-            let finalScore = 0;
-            if(totalGradedUnits > 0) {
-                let totalCorrect = p1Correct + p2Correct + p3Correct;
-                finalScore = (totalCorrect / totalGradedUnits) * 10;
-            }
+            let finalScore = 0; if(totalGradedUnits > 0) { finalScore = ((p1Correct + p2Correct + p3Correct) / totalGradedUnits) * 10; }
 
             const container = document.getElementById('main-content-container');
             container.innerHTML = `
                 <div class="card shadow p-5 border-0 text-center rounded-4 mt-4">
                     <h2 class="text-success fw-bold mb-4">🎉 HOÀN THÀNH BÀI THI</h2>
                     <p class="fs-4 text-muted">Thí sinh: <strong class="text-dark">${currentStudentName.toUpperCase()}</strong> - Lớp: <strong class="text-dark">${currentStudentClass.toUpperCase()}</strong></p>
-                    <div class="display-3 fw-bold text-primary mb-4 border py-4 bg-light rounded-4">
-                        ${finalScore.toFixed(2)} <span class="fs-4 text-muted">Điểm</span>
-                    </div>
-                    <div class="d-flex justify-content-center gap-3 mb-5">
-                        <span class="badge bg-success fs-6 p-2">Phần I: ${p1Correct} câu đúng</span>
-                        <span class="badge bg-danger fs-6 p-2">Phần II: ${p2Correct} ý đúng</span>
-                        <span class="badge bg-info text-dark fs-6 p-2">Phần III: ${p3Correct} ý đúng</span>
-                    </div>
-                    <button onclick="exportStructuredExcel('${finalScore.toFixed(2)}')" class="btn btn-success btn-lg fw-bold px-5 py-3 shadow rounded-pill">
-                        📥 TẢI FILE EXCEL CHIA CỘT BÁO CÁO
-                    </button>
+                    <div class="display-3 fw-bold text-primary mb-4 border py-4 bg-light rounded-4">${finalScore.toFixed(2)} <span class="fs-4 text-muted">Điểm</span></div>
+                    <button onclick="exportStructuredExcel('${finalScore.toFixed(2)}')" class="btn btn-success btn-lg fw-bold px-5 py-3 shadow rounded-pill">📥 TẢI FILE EXCEL BÁO CÁO</button>
                 </div>`;
             
-            fetch(SCRIPT_WEB_APP_URL, {
-                method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ student_name: currentStudentName, student_class: currentStudentClass, course_title: currentCourseObj.title, score: parseFloat(finalScore.toFixed(2)) })
-            }).catch(e => console.log(e));
+            fetch(SCRIPT_WEB_APP_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ student_name: currentStudentName, student_class: currentStudentClass, course_title: currentCourseObj.title, score: parseFloat(finalScore.toFixed(2)) }) }).catch(e => console.log(e));
         }
 
         function exportStructuredExcel(score) {
-            let csvRows = [];
-            csvRows.push("Mon Thi,Ho va Ten,Lop,Tong Diem,Chi Tiet Phan I,Chi Tiet Phan II,Chi Tiet Phan III");
-
+            let csvRows = ["Mon Thi,Ho va Ten,Lop,Tong Diem,Chi Tiet Phan I,Chi Tiet Phan II,Chi Tiet Phan III"];
             let p1Arr = []; let p2Arr = []; let p3Arr = [];
             selectedQuestions.forEach(q => {
                 let partStr = String(q.part || '1').trim();
@@ -463,36 +427,23 @@
                         let subAns = []; ['a','b','c','d'].forEach((sub, i) => { if(i < ansArray.length) subAns.push(`${sub}:${studentAnswers.part2[q.id+'_'+sub]||'-'}`); });
                         p2Arr.push(`ID_${q.id}(${subAns.join(' ')})`);
                     } else { p2Arr.push(`ID_${q.id}:${studentAnswers.part2[q.id]||'-'}`); }
-                } else if (partStr === '3') {
-                    p3Arr.push(`ID_${q.id}:${studentAnswers.part3[q.id]||'-'}`);
-                } else {
-                    p1Arr.push(`ID_${q.id}:${studentAnswers.part1[q.id]||'-'}`);
-                }
+                } else if (partStr === '3') { p3Arr.push(`ID_${q.id}:${studentAnswers.part3[q.id]||'-'}`);
+                } else { p1Arr.push(`ID_${q.id}:${studentAnswers.part1[q.id]||'-'}`); }
             });
-
-            csvRows.push([
-                `"${currentCourseObj.title}"`, `"${currentStudentName.toUpperCase()}"`, `"${currentStudentClass.toUpperCase()}"`,
-                `${score}`, `"${p1Arr.join(' | ')}"`, `"${p2Arr.join(' | ')}"`, `"${p3Arr.join(' | ')}"`
-            ].join(","));
-
-            let csvContent = "\uFEFF" + csvRows.join("\n");
-            let blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            let link = document.createElement("a");
-            link.setAttribute("href", URL.createObjectURL(blob));
-            link.setAttribute("download", `KetQuaPhiếu_${currentStudentClass}_${currentStudentName.replace(/\s+/g, '')}.csv`);
+            csvRows.push([`"${currentCourseObj.title}"`, `"${currentStudentName.toUpperCase()}"`, `"${currentStudentClass.toUpperCase()}"`, `${score}`, `"${p1Arr.join(' | ')}"`, `"${p2Arr.join(' | ')}"`, `"${p3Arr.join(' | ')}"`].join(","));
+            let blob = new Blob(["\uFEFF" + csvRows.join("\n")], { type: 'text/csv;charset=utf-8;' });
+            let link = document.createElement("a"); link.setAttribute("href", URL.createObjectURL(blob)); link.setAttribute("download", `KetQua_${currentStudentClass}_${currentStudentName.replace(/\s+/g, '')}.csv`);
             document.body.appendChild(link); link.click(); document.body.removeChild(link);
         }
 
         async function lookupResults() {
-            const name = document.getElementById('search_student_name').value.trim().toLowerCase();
-            const sClass = document.getElementById('search_student_class').value.trim().toLowerCase();
+            const name = document.getElementById('search_student_name').value.trim().toLowerCase(); const sClass = document.getElementById('search_student_class').value.trim().toLowerCase();
             const output = document.getElementById('lookup-output');
-            if(!name || !sClass) { alert("Vui lòng nhập đủ Họ tên & Lớp!"); return; }
-            output.innerHTML = '<div class="text-center text-primary fw-bold mt-2">⏳ Đang tìm kiếm...</div>';
+            if(!name || !sClass) { alert("Nhập đủ Họ tên & Lớp!"); return; }
+            output.innerHTML = '<div class="text-center text-primary fw-bold mt-2">⏳ Đang tìm...</div>';
             try {
                 const res = await fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=quiz_results`);
-                const history = parseCSV(await res.text());
-                const match = history.filter(h => String(h["student_name"]||"").toLowerCase().includes(name) && String(h["student_class"]||"").toLowerCase() === sClass);
+                const match = parseCSV(await res.text()).filter(h => String(h["student_name"]||"").toLowerCase().includes(name) && String(h["student_class"]||"").toLowerCase() === sClass);
                 if(match.length === 0) { output.innerHTML = '<div class="alert alert-warning p-2 mt-2 text-center">Không có lịch sử thi.</div>'; } 
                 else {
                     let html = '<div class="list-group mt-2">';
