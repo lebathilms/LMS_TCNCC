@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ thống LMS Quản Lý - Không Cần Tải Thư Viện</title>
+    <title>Hệ thống LMS Đám Mây - Google Sheets DB</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         .list-group-item.active small { color: rgba(255,255,255,0.8) !important; }
@@ -12,15 +12,15 @@
 </head>
 <body>
     <div class="container mt-5 mb-5">
-        <h2 class="text-center mb-2 text-success fw-bold">HỆ THỐNG LMS CHUYÊN NGHIỆP</h2>
-        <p class="text-center text-muted mb-4">Mã nguồn JS Thuần - Không sợ lỗi chặn thư viện</p>
+        <h2 class="text-center mb-2 text-success fw-bold">HỆ THỐNG LMS TRÊN ĐÁM MÂY GOOGLE</h2>
+        <p class="text-center text-muted mb-4">Dữ liệu đồng bộ trực tiếp từ Google Sheets - Vượt mọi tường lửa trường học</p>
         
         <div class="row mt-4">
             <div class="col-md-4">
                 <div class="list-group shadow-sm mb-4">
                     <h5 class="p-3 bg-dark text-white border rounded-top m-0">Khóa học hiện có</h5>
                     <div id="course-list">
-                        <div class="p-3 text-center text-muted">Đang tải khóa học...</div>
+                        <div class="p-3 text-center text-muted">Đang kết nối đám mây Google...</div>
                     </div>
                 </div>
             </div>
@@ -34,206 +34,102 @@
                 </div>
             </div>
         </div>
-
-        <hr class="my-5">
-
-        <div class="bg-light p-4 rounded border shadow-sm">
-            <h4 class="text-primary mb-4 fw-bold">🛠️ GIAO DIỆN QUẢN TRỊ DÀNH CHO GIÁO VIÊN</h4>
-            
-            <div class="row">
-                <div class="col-md-5 border-end">
-                    <h5 class="text-secondary mb-3">➕ Tạo Khóa Học Mới</h5>
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Tên khóa học:</label>
-                        <input id="nc-title" type="text" class="form-control" placeholder="Ví dụ: Lập trình Python, Tin học văn phòng...">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Mô tả ngắn gọn:</label>
-                        <textarea id="nc-desc" class="form-control" rows="2" placeholder="Nhập mô tả ngắn gọn..."></textarea>
-                    </div>
-                    <button onclick="addCourse()" class="btn btn-primary w-100">Lưu Khóa Học</button>
-                </div>
-
-                <div class="col-md-7 ps-md-4 mt-4 mt-md-0">
-                    <h5 class="text-secondary mb-3">📝 Soạn Bài Giảng Mới</h5>
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Chọn khóa học áp dụng:</label>
-                        <select id="nl-course-id" class="form-select">
-                            <option value="" disabled selected>-- Vui lòng chọn một khóa học --</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Tiêu đề bài học:</label>
-                        <input id="nl-title" type="text" class="form-control" placeholder="Ví dụ: Bài 1: Vòng lặp For">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Nội dung bài giảng:</label>
-                        <textarea id="nl-content" class="form-control" rows="4" placeholder="Nhập nội dung chi tiết bài học..."></textarea>
-                    </div>
-                    <button onclick="addLesson()" class="btn btn-success w-100">Xuất Bản Bài Giảng</button>
-                </div>
-            </div>
-        </div>
     </div>
 
     <script>
-        // Cấu hình API Endpoint trực tiếp tới Supabase REST API
-         const SUPABASE_URL = 'https://spkbptgjviokebkqcssn.supabase.co/rest/v1/';
-        const SUPABASE_KEY = 'sb_publishable_k8hAOCZz4hj_r2wlvSqWXQ_FyTpXc_k';
-        const supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        const headers = {
-            'apikey': API_KEY,
-            'Authorization': `Bearer ${API_KEY}`,
-            'Content-Type': 'application/json'
-        };
-
+        // Cấu hình ID Google Sheet của anh
+        const SHEET_ID = '1Hh-JSTQvt7y-Yr0I1U-6aoRaoJwX4Kb_1kBl-7OdX28';
+        
+        let allCourses = [];
+        let allLessons = [];
         let currentCourseId = null;
 
-        // 1. Tải danh sách khóa học khi mở trang
-        async function fetchCourses() {
-            try {
-                const response = await fetch(`${API_URL}/courses?select=*&order=id.asc`, { headers });
-                const courses = await response.json();
-                
-                const listContainer = document.getElementById('course-list');
-                const selectBox = document.getElementById('nl-course-id');
-                
-                if (courses.length === 0) {
-                    listContainer.innerHTML = '<div class="p-3 text-center text-muted">Chưa có khóa học nào.</div>';
-                    return;
-                }
-
-                // Render danh sách nút bấm khóa học
-                let listHtml = '';
-                let selectHtml = '<option value="" disabled selected>-- Vui lòng chọn một khóa học --</option>';
-                
-                courses.forEach(course => {
-                    const activeClass = currentCourseId == course.id ? 'active' : '';
-                    listHtml += `
-                        <button onclick="selectCourse(${course.id})" class="list-group-item list-group-item-action p-3 ${activeClass}">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <h6 class="mb-1 fw-bold">${course.title}</h6>
-                                <button class="btn btn-sm btn-outline-danger py-0 px-1" onclick="event.stopPropagation(); deleteCourse(${course.id})">Xóa</button>
-                            </div>
-                            <small class="d-block text-muted style-desc">${course.description || ''}</small>
-                        </button>
-                    `;
-                    selectHtml += `<option value="${course.id}">${course.title}</option>`;
+        // Hàm chuyển đổi dữ liệu CSV từ Google Sheet sang dạng JSON mượt mà
+        function csvToObjects(csvText) {
+            const lines = csvText.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+            if (lines.length === 0) return [];
+            const headers = lines[0].split(',').map(h => h.replace(/^"|"$/g, '').trim());
+            
+            return lines.slice(1).map(line => {
+                // Xử lý cắt chuỗi theo dấu phẩy nhưng giữ nguyên dữ liệu trong dấu ngoặc kép
+                const values = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || line.split(',');
+                const obj = {};
+                headers.forEach((header, index) => {
+                    let val = values[index] ? values[index].replace(/^"|"$/g, '').trim() : '';
+                    obj[header] = val;
                 });
+                return obj;
+            });
+        }
 
-                listContainer.innerHTML = listHtml;
-                selectBox.innerHTML = selectHtml;
+        // Tải toàn bộ dữ liệu từ đám mây Google Sheets về
+        async function loadDataFromCloud() {
+            try {
+                // Gọi data từ sheet 'courses'
+                const resCourses = await fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=courses`);
+                const textCourses = await resCourses.text();
+                allCourses = csvToObjects(textCourses);
+
+                // Gọi data từ sheet 'lessons'
+                const resLessons = await fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=lessons`);
+                const textLessons = await resLessons.text();
+                allLessons = csvToObjects(textLessons);
+
+                renderCourses();
             } catch (err) {
-                alert('Lỗi tải dữ liệu khóa học: ' + err.message);
+                document.getElementById('course-list').innerHTML = `<div class="p-3 text-danger">Không thể kết nối đến đám mây Google: ${err.message}</div>`;
             }
         }
 
-        // 2. Click chọn xem bài học của từng khóa học
-        async function selectCourse(courseId) {
+        // Render danh mục khóa học
+        function renderCourses() {
+            const listContainer = document.getElementById('course-list');
+            if (allCourses.length === 0) {
+                listContainer.innerHTML = '<div class="p-3 text-center text-muted">Chưa có khóa học nào trên Cloud.</div>';
+                return;
+            }
+
+            let html = '';
+            allCourses.forEach(course => {
+                const activeClass = currentCourseId == course.id ? 'active' : '';
+                html += `
+                    <button onclick="selectCourse(${course.id})" class="list-group-item list-group-item-action p-3 ${activeClass}">
+                        <h6 class="mb-1 fw-bold">${course.title}</h6>
+                        <small class="d-block text-muted style-desc">${course.description || ''}</small>
+                    </button>
+                `;
+            });
+            listContainer.innerHTML = html;
+        }
+
+        // Xem chi tiết bài học
+        function selectCourse(courseId) {
             currentCourseId = courseId;
-            fetchCourses(); // Cập nhật lại class 'active' cho menu
+            renderCourses();
 
             const container = document.getElementById('lesson-container');
-            container.innerHTML = '<div class="text-center p-4"><div class="spinner-border text-success"></div><p class="mt-2 text-muted">Đang tải bài học...</p></div>';
+            const filteredLessons = allLessons.filter(l => l.course_id == courseId);
 
-            try {
-                const response = await fetch(`${API_URL}/lessons?course_id=eq.${courseId}&select=*&order=id.asc`, { headers });
-                const lessons = await response.json();
-
-                let html = '<h5 class="mb-3 text-secondary border-bottom pb-2">Nội dung chi tiết bài học</h5>';
-                if (lessons.length === 0) {
-                    html += '<div class="alert alert-warning">Chưa cập nhật bài học cho khóa này.</div>';
-                } else {
-                    lessons.forEach(lesson => {
-                        html += `
-                            <div class="card mb-3 shadow-sm border-start border-success border-4">
-                                <div class="card-body">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <h5 class="card-title text-success fw-bold mb-0">${lesson.title}</h5>
-                                        <button class="btn btn-sm btn-link text-danger p-0" onclick="deleteLesson(${lesson.id})">Xóa bài</button>
-                                    </div>
-                                    <hr class="my-2 text-muted">
-                                    <p class="card-text text-dark" style="white-space: pre-line; line-height: 1.6;">${lesson.content}</p>
-                                </div>
+            let html = '<h5 class="mb-3 text-secondary border-bottom pb-2">Nội dung chi tiết bài học</h5>';
+            if (filteredLessons.length === 0) {
+                html += '<div class="alert alert-warning">Chưa cập nhật bài học cho khóa này.</div>';
+            } else {
+                filteredLessons.forEach(lesson => {
+                    html += `
+                        <div class="card mb-3 shadow-sm border-start border-success border-4">
+                            <div class="card-body">
+                                <h5 class="card-title text-success fw-bold">${lesson.title}</h5>
+                                <hr class="my-2 text-muted">
+                                <p class="card-text text-dark" style="white-space: pre-line; line-height: 1.6;">${lesson.content}</p>
                             </div>
-                        `;
-                    });
-                }
-                container.innerHTML = html;
-            } catch (err) {
-                alert('Lỗi tải bài học: ' + err.message);
+                        </div>
+                    `;
+                });
             }
+            container.innerHTML = html;
         }
 
-        // 3. Thêm khóa học mới
-        async function addCourse() {
-            const title = document.getElementById('nc-title').value;
-            const description = document.getElementById('nc-desc').value;
-
-            if (!title) return alert('Vui lòng nhập tên khóa học!');
-
-            try {
-                const response = await fetch(`${API_URL}/courses`, {
-                    method: 'POST',
-                    headers: headers,
-                    body: JSON.stringify({ title, description })
-                });
-                if (response.ok) {
-                    alert('Thêm khóa học thành công!');
-                    document.getElementById('nc-title').value = '';
-                    document.getElementById('nc-desc').value = '';
-                    fetchCourses();
-                } else { alert('Lỗi từ máy chủ không lưu được.'); }
-            } catch (err) { alert('Lỗi: ' + err.message); }
-        }
-
-        // 4. Thêm bài học mới
-        async function addLesson() {
-            const course_id = document.getElementById('nl-course-id').value;
-            const title = document.getElementById('nl-title').value;
-            const content = document.getElementById('nl-content').value;
-
-            if (!course_id || !title || !content) return alert('Vui lòng điền đầy đủ thông tin bài giảng!');
-
-            try {
-                const response = await fetch(`${API_URL}/lessons`, {
-                    method: 'POST',
-                    headers: headers,
-                    body: JSON.stringify({ course_id: parseInt(course_id), title, content })
-                });
-                if (response.ok) {
-                    alert('Xuất bản bài giảng thành công!');
-                    document.getElementById('nl-title').value = '';
-                    document.getElementById('nl-content').value = '';
-                    if (currentCourseId == course_id) selectCourse(currentCourseId);
-                } else { alert('Lỗi không xuất bản được.'); }
-            } catch (err) { alert('Lỗi: ' + err.message); }
-        }
-
-        // 5. Xóa khóa học
-        async function deleteCourse(id) {
-            if (!confirm('Xóa khóa học này sẽ xóa toàn bộ bài học bên trong?')) return;
-            try {
-                await fetch(`${API_URL}/courses?id=eq.${id}`, { method: 'DELETE', headers });
-                if (currentCourseId == id) {
-                    currentCourseId = null;
-                    document.getElementById('lesson-container').innerHTML = '<div class="alert alert-info text-center p-5 shadow-sm">Chọn khóa học bên trái để hiển thị.</div>';
-                }
-                fetchCourses();
-            } catch (err) { alert('Lỗi: ' + err.message); }
-        }
-
-        // 6. Xóa bài học
-        async function deleteLesson(id) {
-            if (!confirm('Bạn có chắc chắn muốn xóa bài này?')) return;
-            try {
-                await fetch(`${API_URL}/lessons?id=eq.${id}`, { method: 'DELETE', headers });
-                if (currentCourseId) selectCourse(currentCourseId);
-            } catch (err) { alert('Lỗi: ' + err.message); }
-        }
-
-        // Chạy ứng dụng khi trang web load xong
-        window.onload = fetchCourses;
+        window.onload = loadDataFromCloud;
     </script>
 </body>
 </html>
