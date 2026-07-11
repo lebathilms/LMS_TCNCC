@@ -145,15 +145,6 @@ function renderCourses() {
             }
         }
 
-        function renderCourses() {
-            const listContainer = document.getElementById('course-list');
-            let html = '';
-            allCourses.forEach(course => {
-                html += `<button onclick="selectCourse(${course.id})" class="list-group-item list-group-item-action p-3 ${currentCourseId == course.id ? 'active' : ''}"><h6 class="mb-1 fw-bold">${course.title}</h6><small class="d-block style-desc">${course.description || ''}</small></button>`;
-            });
-            listContainer.innerHTML = html;
-        }
-
         function selectCourse(courseId) {
             clearInterval(timerInterval); 
             currentCourseId = courseId;
