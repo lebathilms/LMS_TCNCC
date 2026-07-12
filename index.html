@@ -41,7 +41,7 @@
 <body>
     <div class="container mt-4 mb-5">
         <h2 class="text-center mb-1 text-success fw-bold">HỆ THỐNG LMS & KHẢO THÍ ĐÁM MÂY</h2>
-        <p class="text-center text-muted mb-4">Trường Trung cấp nghề Củ Chi - Phân quyền Giáo viên & Học sinh</p>
+        <p class="text-center text-muted mb-4">Trường Trung cấp nghề Củ Chi - Tích hợp xuất file Word trình ký</p>
         
         <div class="row mt-4">
             <div class="col-md-4">
@@ -240,7 +240,7 @@
                 <h5 class="mb-4 border-bottom pb-3 text-danger fw-bold text-center">⚙️ QUẢN TRỊ VIÊN: TẠO VÀ XUẤT ĐỀ TRÌNH KÝ</h5>
                 <div class="card shadow p-5 border-0 bg-light rounded-4">
                     <div class="alert alert-warning">
-                        <strong>Hướng dẫn:</strong> Nhập Mã Đề mới (Ví dụ: De_105) và chọn Cấu trúc. Hệ thống sẽ tự động lưu vào Google Sheets và tải File PDF về máy tính. Học sinh chỉ cần nhập đúng mã đề này để thi.
+                        <strong>Hướng dẫn:</strong> Nhập Mã Đề mới (Ví dụ: De_105) và chọn Cấu trúc. Chọn xuất PDF (để nguyên cấu trúc) hoặc WORD (nếu muốn vào sửa lại text). Hệ thống sẽ tự động lưu vào Google Sheets.
                     </div>
                     <div class="row g-4 text-start" style="max-width: 500px; margin: 0 auto;">
                         <div class="col-12">
@@ -258,13 +258,14 @@
                         </div>
                     </div>
                     ${codeListHtml}
-                    <div class="text-center mt-5">
-                        <button id="btn-admin-export" onclick="createAndExportTeacherExam()" class="btn btn-dark btn-lg px-5 py-3 fw-bold shadow-sm rounded-pill fs-5">🖨️ TẠO MÃ ĐỀ & XUẤT FILE TRÌNH KÝ</button>
+                    <div class="d-flex justify-content-center gap-3 mt-5 flex-wrap">
+                        <button id="btn-admin-export-pdf" onclick="createAndExportTeacherExam('pdf')" class="btn btn-danger btn-lg px-4 py-3 fw-bold shadow-sm rounded-pill fs-6">🖨️ TẠO & XUẤT PDF</button>
+                        <button id="btn-admin-export-word" onclick="createAndExportTeacherExam('word')" class="btn btn-primary btn-lg px-4 py-3 fw-bold shadow-sm rounded-pill fs-6">📝 TẠO & XUẤT WORD</button>
                     </div>
                 </div>`;
         }
 
-        async function createAndExportTeacherExam() {
+        async function createAndExportTeacherExam(type) {
             const eCode = document.getElementById('admin_exam_code').value.trim();
             if(!eCode) { alert("Thầy vui lòng nhập Mã đề cần tạo!"); return; }
 
@@ -275,7 +276,8 @@
             let questions = getQuestionsByCode(eCode, limitInput);
             if(!questions) return;
 
-            let btn = document.getElementById('btn-admin-export');
+            let btnId = type === 'pdf' ? 'btn-admin-export-pdf' : 'btn-admin-export-word';
+            let btn = document.getElementById(btnId);
             let oldText = btn.innerHTML;
 
             let exist = allExamCodes.find(e => String(e.exam_code).trim() === eCode && String(e.course_id).trim() === currentCourseId);
@@ -290,12 +292,18 @@
                 } catch (e) { console.error(e); }
             }
 
-            btn.innerHTML = "⏳ Đang vẽ PDF, chờ xíu...";
-            exportTeacherExamPDF(eCode, quizTimeMinutes, questions, btn, oldText);
+            if(type === 'pdf') {
+                btn.innerHTML = "⏳ Đang vẽ PDF, chờ xíu...";
+                exportTeacherExamPDF(eCode, quizTimeMinutes, questions, btn, oldText);
+            } else {
+                btn.innerHTML = "⏳ Đang tạo file Word...";
+                exportTeacherExamWord(eCode, quizTimeMinutes, questions, btn, oldText);
+            }
         }
 
+        const printBlockStyle = "display: inline-block; width: 100%; page-break-inside: avoid !important; break-inside: avoid !important; margin-bottom: 15px;";
+
         function exportTeacherExamPDF(eCode, quizTimeMinutes, questions, btnObj, oldText) {
-            // SỬ DỤNG CSS MỚI CHỐNG CẮT NGANG CÂU HỎI KHI XUẤT PDF
             let pdfHtml = `
                 <style>
                     .avoid-break { page-break-inside: avoid !important; break-inside: avoid !important; display: block; margin-bottom: 15px; width: 100%; clear: both; }
@@ -324,7 +332,7 @@
                         let isCorr = (correctAns === opt);
                         let text = q['option_' + opt.toLowerCase()] || '';
                         let style = isCorr ? 'color: red; font-weight: bold;' : 'color: #000;';
-                        let mark = isCorr ? '[X]' : '[&nbsp;&nbsp;]';
+                        let mark = isCorr ? '[X]' : '[  ]';
                         pdfHtml += `<div style="${style}">${mark} ${opt}. ${text}</div>`;
                     });
                     pdfHtml += `</div>`;
@@ -366,13 +374,104 @@
                 </div></div>`;
 
             let tempDiv = document.createElement('div'); tempDiv.innerHTML = pdfHtml;
-            // Config PDF: Gỡ bỏ avoid-all vì nó gây lỗi ngắt trang lung tung, chỉ dùng CSS
-            let opt = { margin: 10, filename: `DeTrinhKy_${eCode}_${currentCourseObj.title}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'] } };
+            let opt = { margin: 10, filename: `DeTrinhKy_MaDe${eCode}_${currentCourseObj.title}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'] } };
             
             html2pdf().set(opt).from(tempDiv).save().then(() => {
                 btnObj.innerHTML = oldText; btnObj.disabled = false;
                 renderAdminPanel();
             });
+        }
+
+        // TÍNH NĂNG MỚI: XUẤT ĐỀ VÀ ĐÁP ÁN RA FILE WORD (.DOC)
+        function exportTeacherExamWord(eCode, quizTimeMinutes, questions, btnObj, oldText) {
+            let html = `
+            <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+            <head><meta charset='utf-8'><title>Đề thi và Đáp án</title>
+            <style>
+                body { font-family: 'Times New Roman', serif; font-size: 13pt; line-height: 1.5; }
+                .section-title { font-weight: bold; margin-top: 15px; margin-bottom: 10px; text-transform: uppercase; }
+                .question-block { margin-bottom: 15px; }
+            </style>
+            </head><body>
+            <table style="width: 100%; text-align: center; font-weight: bold; margin-bottom: 20px; border: none;">
+                <tr>
+                    <td style="width: 50%;">SỞ LĐTB&XH TP.HCM<br>TRƯỜNG TRUNG CẤP NGHỀ CỦ CHI<br>---------------</td>
+                    <td style="width: 50%;">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM<br>Độc lập - Tự do - Hạnh phúc<br>---------------</td>
+                </tr>
+            </table>
+            <div style="text-align: center; font-size: 18pt; font-weight: bold; margin-bottom: 10px;">ĐỀ THI & ĐÁP ÁN TRÌNH KÝ</div>
+            <div style="text-align: center; font-size: 13pt; margin-bottom: 20px;">Môn thi: ${currentCourseObj.title} | Mã đề: <b>${eCode}</b> | Thời gian: ${quizTimeMinutes} phút</div>
+            `;
+
+            let part1Qs = questions.filter(q => String(q.part || '1').trim() === '1' || String(q.part || '1').trim() === '');
+            let part2Qs = questions.filter(q => String(q.part || '1').trim() === '2');
+            let part3Qs = questions.filter(q => String(q.part || '1').trim() === '3');
+
+            if (part1Qs.length > 0) {
+                html += `<div class="section-title">PHẦN I. Câu trắc nghiệm nhiều lựa chọn</div>`;
+                part1Qs.forEach((q, idx) => {
+                    let correctAns = String(q.answer).trim().toUpperCase();
+                    html += `<div class="question-block"><b>Câu ${idx + 1}:</b> ${q.question}<br>`;
+                    ['A','B','C','D'].forEach(opt => {
+                        let isCorr = (correctAns === opt);
+                        let text = q['option_' + opt.toLowerCase()] || '';
+                        let style = isCorr ? 'color: red; font-weight: bold;' : 'color: #000;';
+                        let mark = isCorr ? '[X]' : '[  ]';
+                        html += `<div style="${style}">${mark} ${opt}. ${text}</div>`;
+                    });
+                    html += `</div>`;
+                });
+            }
+
+            if (part2Qs.length > 0) {
+                html += `<div class="section-title">PHẦN II. Câu trắc nghiệm Đúng/Sai</div>`;
+                part2Qs.forEach((q, idx) => {
+                    let subOptions = (q.question || "").replace(/\\\\n/g, '\n').replace(/\\n/g, '\n').split('\n');
+                    let titleQ = subOptions[0]; let correctAnsArray = String(q.answer || "").split('|');
+                    
+                    html += `<div class="question-block"><b>Câu ${idx + 1}:</b> ${titleQ}<br>`;
+                    if(subOptions.length > 1) {
+                        for(let i=1; i<subOptions.length; i++) {
+                            if(!subOptions[i].trim()) continue; let subChar = String.fromCharCode(96 + i); let cAns = (i-1 < correctAnsArray.length) ? correctAnsArray[i-1].trim().toUpperCase() : '';
+                            html += `<div style="margin-left:20px; margin-top:5px;">${subChar}) ${subOptions[i]} <br><span style="color:red;font-weight:bold;">&rarr; Đáp án đúng: ${cAns}</span></div>`;
+                        }
+                    } else {
+                        let cAns = correctAnsArray[0].trim().toUpperCase();
+                        html += `<div style="margin-left:20px; margin-top:5px;"><span style="color:red;font-weight:bold;">&rarr; Đáp án đúng: ${cAns}</span></div>`;
+                    }
+                    html += `</div>`;
+                });
+            }
+
+            if (part3Qs.length > 0) {
+                html += `<div class="section-title">PHẦN III. Câu trả lời ngắn</div>`;
+                part3Qs.forEach((q, idx) => {
+                    let cAns = String(q.answer || "").trim().toUpperCase();
+                    html += `<div class="question-block"><b>Câu ${idx + 1}:</b> ${q.question}<br><div style="margin-left:20px;"><span style="color:red;font-weight:bold;">&rarr; Đáp án đúng: ${cAns}</span></div></div>`;
+                });
+            }
+
+            html += `
+                <table style="width: 100%; text-align: center; font-weight: bold; margin-top: 50px; border: none;">
+                    <tr>
+                        <td style="width: 50%;">BAN GIÁM HIỆU DUYỆT<br><br><br><br><br></td>
+                        <td style="width: 50%;">GIÁO VIÊN RA ĐỀ<br><br><br><br><br>Lê Bá Thi</td>
+                    </tr>
+                </table>
+            </body></html>`;
+
+            let blob = new Blob(['\ufeff', html], { type: 'application/msword' });
+            let url = URL.createObjectURL(blob);
+            let link = document.createElement("a");
+            link.href = url;
+            link.download = `DeTrinhKy_MaDe${eCode}_${currentCourseObj.title}.doc`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            btnObj.innerHTML = oldText;
+            btnObj.disabled = false;
+            renderAdminPanel();
         }
 
         // ================= KHU VỰC HỌC SINH LÀM BÀI =================
@@ -600,8 +699,7 @@
                     pdfHtml += `<div class="avoid-break"><b>Câu ${idx + 1}:</b> ${q.question} <i style="color:red;">[Điểm: ${earned.toFixed(2)}/${sData.unitScore.toFixed(2)}]</i><br>`;
                     ['A','B','C','D'].forEach(opt => {
                         let isSel = (ans === opt); let isCorr = (correctAns === opt); let text = q['option_' + opt.toLowerCase()] || '';
-                        let style = isCorr ? 'color: green; font-weight: bold;' : (isSel ? 'color: blue;' : 'color: #000;');
-                        let mark = isSel ? '[X]' : '[&nbsp;&nbsp;]'; let corrLabel = isCorr ? ' <b>&larr; (ĐÁP ÁN ĐÚNG)</b>' : '';
+                        let style = isCorr ? 'color: green; font-weight: bold;' : (isSel ? 'color: blue;' : 'color: #000;'); let mark = isSel ? '[X]' : '[&nbsp;&nbsp;]'; let corrLabel = isCorr ? ' <b>&larr; (ĐÁP ÁN ĐÚNG)</b>' : '';
                         pdfHtml += `<div style="${style}">${mark} ${opt}. ${text}${corrLabel}</div>`;
                     });
                     pdfHtml += `</div>`;
@@ -636,7 +734,6 @@
             }
 
             pdfHtml += `<div class="html2pdf__page-break"></div><h3 class="avoid-break" style="text-align:center; background:#f0f0f0; padding: 8px; border:1px solid #000; margin-top: 20px;">TRANG 2: PHIẾU BÁO CÁO TỔNG QUÁT BONG BÓNG</h3>`;
-            
             let circleStyle = "display:inline-block; width:20px; height:20px; border:1px solid #000; border-radius:50%; text-align:center; line-height:20px; font-size:11px; margin-right:3px;"; let filledStyle = "background-color:#000; color:#fff; font-weight:bold;";
 
             if (part1Qs.length > 0) {
@@ -674,7 +771,6 @@
             pdfHtml += `</div>`; 
 
             let tempDiv = document.createElement('div'); tempDiv.innerHTML = pdfHtml;
-            // Config PDF: Bắt buộc dùng mode 'css', bỏ 'avoid-all' để không bị ngắt trang dư thừa
             let opt = { margin: 10, filename: `PhieuDiem_${currentStudentId}_${currentStudentName.replace(/\s+/g, '')}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'] } };
 
             let btn = document.querySelector("button[onclick='exportStudentPDFReport()']"); let oldText = btn.innerHTML; btn.innerHTML = "⏳ Đang vẽ PDF, chờ xíu..."; btn.disabled = true;
