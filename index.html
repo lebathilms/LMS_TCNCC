@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ thống LMS & Khảo thí Đám mây - Trường TCN Củ Chi</title>
+    <title>Hệ thống LMS & Khảo thí trực tuyến - Trường Trung cấp nghề Củ Chi</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         body { background-color: #f8f9fa; }
         .list-group-item.active small { color: rgba(255,255,255,0.8) !important; }
@@ -40,7 +41,7 @@
 <body>
     <div class="container mt-4 mb-5">
         <h2 class="text-center mb-1 text-success fw-bold">HỆ THỐNG LMS & KHẢO THÍ ĐÁM MÂY</h2>
-        <p class="text-center text-muted mb-4">Trường Trung cấp nghề Củ Chi - Định dạng xuất báo cáo Word mẫu chuẩn</p>
+        <p class="text-center text-muted mb-4">Trường Trung cấp nghề Củ Chi - Phiên bản PDF tự động chấm điểm</p>
         
         <div class="row mt-4">
             <div class="col-md-4">
@@ -92,6 +93,9 @@
         let selectedQuestions = [];
         let studentAnswers = { part1: {}, part2: {}, part3: {} };
         let currentQuestionIndex = 0;
+
+        // Lưu trữ điểm để xuất PDF
+        let finalScoreData = {};
 
         function parseCSV(text) {
             text = text.replace(/[\u200B-\u200D\uFEFF]/g, '');
@@ -193,14 +197,8 @@
             const container = document.getElementById('main-content-container');
             const filteredQuestions = allQuestions.filter(q => String(q.course_id || "").trim() === currentCourseId);
             
-            let html = `<h5 class="mb-4 border-bottom pb-3 text-danger fw-bold text-center">PHÒNG KHẢO THÍ HỆ THỐNG MẪU 3 PHẦN</h5>`;
-            if (filteredQuestions.length === 0) {
-                html += '<div class="alert alert-warning text-center">Môn học này hiện chưa cập nhật câu hỏi trắc nghiệm.</div>';
-                container.innerHTML = html; return;
-            }
-
-            // COMBO BOX lựa chọn cấu trúc thi
-            html += `
+            html = `
+                <h5 class="mb-4 border-bottom pb-3 text-danger fw-bold text-center">PHÒNG KHẢO THÍ HỆ THỐNG MẪU 3 PHẦN</h5>
                 <div class="card shadow p-5 border-0 bg-light rounded-4">
                     <div class="row g-4 text-start" style="max-width: 500px; margin: 0 auto;">
                         <div class="col-12"><label class="form-label fw-bold text-secondary">Họ và Tên thí sinh:</label><input type="text" id="student_name" class="form-control form-control-lg border-primary" required></div>
@@ -212,7 +210,7 @@
                                 <option value="40|60">40 câu - Thời gian: 60 phút</option>
                                 <option value="80|120">80 câu - Thời gian: 120 phút</option>
                             </select>
-                            <small class="text-muted d-block mt-2 text-center">* Hệ thống bốc ngẫu nhiên từ kho ngân hàng đề.</small>
+                            <small class="text-muted d-block mt-2 text-center">* Cố định: 6 câu Đúng/Sai & 4 câu Tự luận. Còn lại trắc nghiệm.</small>
                         </div>
                     </div>
                     <div class="text-center mt-5"><button onclick="startDigitalExam()" class="btn btn-danger btn-lg px-5 py-3 fw-bold shadow rounded-pill fs-5">🚀 Bắt Đầu Làm Bài</button></div>
@@ -223,24 +221,36 @@
         function startDigitalExam() {
             const name = document.getElementById('student_name').value.trim();
             const sClass = document.getElementById('student_class').value.trim();
-            
             const configParams = document.getElementById('quiz_custom_limit').value.split('|');
             const limitInput = parseInt(configParams[0]);
             const quizTimeMinutes = parseInt(configParams[1]);
             
             const filteredQuestions = allQuestions.filter(q => String(q.course_id || "").trim() === currentCourseId);
+            
+            // Chia tỷ lệ cố định
+            const reqPart2 = 6;
+            const reqPart3 = 4;
+            const reqPart1 = limitInput - reqPart2 - reqPart3;
+
+            let pool1 = filteredQuestions.filter(q => String(q.part || '1').trim() === '1' || String(q.part || '1').trim() === '');
+            let pool2 = filteredQuestions.filter(q => String(q.part || '1').trim() === '2');
+            let pool3 = filteredQuestions.filter(q => String(q.part || '1').trim() === '3');
+
             if(!name || !sClass) { alert("Vui lòng điền đủ Họ tên và Lớp!"); return; }
-            if(filteredQuestions.length < limitInput) { alert(`Ngân hàng đề hiện chỉ có ${filteredQuestions.length} câu, không đủ để tạo đề ${limitInput} câu. Thầy vui lòng bổ sung câu hỏi!`); return; }
+            if(pool1.length < reqPart1 || pool2.length < reqPart2 || pool3.length < reqPart3) { 
+                alert(`Ngân hàng đề không đủ câu hỏi để chia tỷ lệ!\nCần: ${reqPart1} câu P1, ${reqPart2} câu P2, ${reqPart3} câu P3.`); 
+                return; 
+            }
 
             currentStudentName = name; currentStudentClass = sClass;
             studentAnswers = { part1: {}, part2: {}, part3: {} };
             currentQuestionIndex = 0;
 
-            let shuffledPool = filteredQuestions.sort(() => 0.5 - Math.random()).slice(0, limitInput);
-            selectedQuestions = shuffledPool.sort((a, b) => {
-                let pA = String(a.part || '1').trim(); let pB = String(b.part || '1').trim();
-                return pA.localeCompare(pB);
-            });
+            let p1Selected = pool1.sort(() => 0.5 - Math.random()).slice(0, reqPart1);
+            let p2Selected = pool2.sort(() => 0.5 - Math.random()).slice(0, reqPart2);
+            let p3Selected = pool3.sort(() => 0.5 - Math.random()).slice(0, reqPart3);
+            
+            selectedQuestions = [...p1Selected, ...p2Selected, ...p3Selected];
 
             let timeRemaining = quizTimeMinutes * 60;
             const container = document.getElementById('main-content-container');
@@ -252,7 +262,7 @@
                 </div>
                 <div class="alert alert-secondary py-2 border-0 shadow-sm d-flex justify-content-between align-items-center">
                     <div>Thí sinh: <strong>${currentStudentName}</strong> - Lớp: <strong>${currentStudentClass}</strong></div>
-                    <div class="fw-bold text-success">Gói thi: ${selectedQuestions.length} câu</div>
+                    <div class="fw-bold text-success">Gói thi: ${selectedQuestions.length} câu (P1: ${reqPart1}, P2: ${reqPart2}, P3: ${reqPart3})</div>
                 </div>
                 
                 <div class="card p-3 mb-4 bg-light border-0 shadow-sm">
@@ -311,7 +321,6 @@
                 html += `<div class="part-indicator bg-danger">PHẦN II. Câu hỏi trắc nghiệm Đúng/Sai</div>`;
                 let subOptions = (q.question || "").replace(/\\\\n/g, '\n').replace(/\\n/g, '\n').split('\n');
                 let titleQ = subOptions[0];
-                
                 html += `<h4 class="fw-bold text-dark mb-4"><span class="text-danger">Câu ${currentQuestionIndex + 1}:</span> ${titleQ}</h4>`;
                 
                 if(subOptions.length > 1) {
@@ -394,22 +403,49 @@
             if(!confirm("Em có chắc chắn muốn nộp bài thi này không?")) return;
             clearInterval(timerInterval);
             
-            let p1Correct = 0; let p2Correct = 0; let p3Correct = 0; let totalGradedUnits = 0; 
+            let p1Correct = 0, p2Correct = 0, p3Correct = 0;
+            let p1Units = 0, p2Units = 0, p3Units = 0;
+            
             selectedQuestions.forEach(q => {
-                let partStr = String(q.part || '1').trim(); let correctAns = String(q.answer || "").trim().toUpperCase();
+                let partStr = String(q.part || '1').trim(); 
+                let correctAns = String(q.answer || "").trim().toUpperCase();
+                
                 if (partStr === '2') {
                     let ansArray = correctAns.split('|');
                     if (ansArray.length > 1) {
-                        ansArray.forEach((ans, index) => { totalGradedUnits++; let subChar = String.fromCharCode(97 + index); if(studentAnswers.part2[`${q.id}_${subChar}`] === ans.trim()) p2Correct++; });
-                    } else { totalGradedUnits++; if(studentAnswers.part2[q.id] === ansArray[0].trim()) p2Correct++; }
+                        ansArray.forEach((ans, index) => { 
+                            p2Units++; 
+                            let subChar = String.fromCharCode(97 + index); 
+                            if(studentAnswers.part2[`${q.id}_${subChar}`] === ans.trim()) p2Correct++; 
+                        });
+                    } else { 
+                        p2Units++; 
+                        if(studentAnswers.part2[q.id] === ansArray[0].trim()) p2Correct++; 
+                    }
                 } else if (partStr === '3') {
-                    totalGradedUnits++; let userAns = String(studentAnswers.part3[q.id] || "").trim().toUpperCase(); if(userAns === correctAns && userAns !== "") p3Correct++;
+                    p3Units++; 
+                    let userAns = String(studentAnswers.part3[q.id] || "").trim().toUpperCase(); 
+                    if(userAns === correctAns && userAns !== "") p3Correct++;
                 } else {
-                    totalGradedUnits++; if(studentAnswers.part1[q.id] === correctAns) p1Correct++;
+                    p1Units++; 
+                    if(studentAnswers.part1[q.id] === correctAns) p1Correct++;
                 }
             });
 
-            let finalScore = 0; if(totalGradedUnits > 0) { finalScore = ((p1Correct + p2Correct + p3Correct) / totalGradedUnits) * 10; }
+            let totalGradedUnits = p1Units + p2Units + p3Units;
+            let unitScore = 0;
+            let finalScore = 0, score1 = 0, score2 = 0, score3 = 0;
+            
+            if(totalGradedUnits > 0) { 
+                unitScore = 10 / totalGradedUnits;
+                score1 = p1Correct * unitScore;
+                score2 = p2Correct * unitScore;
+                score3 = p3Correct * unitScore;
+                finalScore = score1 + score2 + score3; 
+            }
+
+            // Lưu dữ liệu để lát in
+            finalScoreData = { finalScore, score1, score2, score3, unitScore };
 
             const container = document.getElementById('main-content-container');
             container.innerHTML = `
@@ -417,115 +453,198 @@
                     <h2 class="text-success fw-bold mb-4">🎉 HOÀN THÀNH BÀI THI</h2>
                     <p class="fs-4 text-muted">Thí sinh: <strong class="text-dark">${currentStudentName.toUpperCase()}</strong> - Lớp: <strong class="text-dark">${currentStudentClass.toUpperCase()}</strong></p>
                     <div class="display-3 fw-bold text-primary mb-4 border py-4 bg-light rounded-4">${finalScore.toFixed(2)} <span class="fs-4 text-muted">Điểm</span></div>
-                    <button onclick="exportWordReport('${finalScore.toFixed(2)}')" class="btn btn-primary btn-lg fw-bold px-5 py-3 shadow rounded-pill">
-                        📥 TẢI PHIẾU BÀI LÀM (FILE WORD)
+                    <div class="row justify-content-center gap-2 mb-4">
+                        <div class="col-md-3 badge bg-success fs-6 p-3">Phần I: ${score1.toFixed(2)}đ (${p1Correct}/${p1Units} ý)</div>
+                        <div class="col-md-3 badge bg-danger fs-6 p-3">Phần II: ${score2.toFixed(2)}đ (${p2Correct}/${p2Units} ý)</div>
+                        <div class="col-md-3 badge bg-info text-dark fs-6 p-3">Phần III: ${score3.toFixed(2)}đ (${p3Correct}/${p3Units} ý)</div>
+                    </div>
+                    <button onclick="exportPDFReport()" class="btn btn-danger btn-lg fw-bold px-5 py-3 shadow rounded-pill">
+                        📥 XUẤT FILE PDF TỔNG HỢP & ĐÁP ÁN (MẪU CHUẨN)
                     </button>
                 </div>`;
             
             fetch(SCRIPT_WEB_APP_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ student_name: currentStudentName, student_class: currentStudentClass, course_title: currentCourseObj.title, score: parseFloat(finalScore.toFixed(2)) }) }).catch(e => console.log(e));
         }
 
-        // HÀM XUẤT RA FILE WORD (.DOC) THEO MẪU BỘ GIÁO DỤC
-        function exportWordReport(score) {
-            let html = `
-            <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-            <head><meta charset='utf-8'><title>Phiếu Trả Lời Trắc Nghiệm</title>
-            <style>
-                body { font-family: 'Times New Roman', serif; font-size: 12pt; }
-                .title { text-align: center; color: #dc3545; font-size: 18pt; font-weight: bold; margin-bottom: 5px; }
-                .subtitle { text-align: center; font-size: 12pt; margin-bottom: 20px; font-style: italic; }
-                .info-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-                .info-table td { border: 1px solid #000; padding: 10px; vertical-align: top; }
-                .score-box { text-align: center; color: red; font-size: 24pt; font-weight: bold; }
-                .section-title { font-weight: bold; margin-top: 15px; margin-bottom: 10px; text-transform: uppercase; background-color: #f0f0f0; padding: 5px; border: 1px solid #000; }
-                .grid-table { width: 100%; border-collapse: collapse; }
-                .grid-table td { padding: 5px; vertical-align: top; }
-                .circle { display: inline-block; width: 20px; height: 20px; border: 1px solid #000; border-radius: 50%; text-align: center; line-height: 20px; font-size: 10pt; margin-right: 5px; }
-                .filled { background-color: #000; color: #fff; }
-            </style>
-            </head><body>
-            <div class='title'>PHIẾU TRẢ LỜI TRẮC NGHIỆM ĐIỆN TỬ</div>
-            <div class='subtitle'>Hệ thống LMS & Khảo thí Đám mây - Trường TCN Củ Chi</div>
-            <table class='info-table'>
-                <tr>
-                    <td width='70%'>
-                        <b>Họ và tên thí sinh:</b> ${currentStudentName.toUpperCase()}<br><br>
-                        <b>Lớp:</b> ${currentStudentClass.toUpperCase()}<br><br>
-                        <b>Môn thi:</b> ${currentCourseObj.title}
-                    </td>
-                    <td width='30%' style='text-align: center;'>
-                        <b>ĐIỂM SỐ</b><br>
-                        <div class='score-box'>${score}</div>
-                    </td>
-                </tr>
-            </table>
+        // HÀM XUẤT RA FILE PDF CHUẨN (CÓ 2 TRANG: ĐỀ VÀ PHIẾU BONG BÓNG)
+        function exportPDFReport() {
+            let sData = finalScoreData;
+            
+            // Xây dựng chuỗi HTML độc lập để in ra PDF
+            let pdfHtml = `
+                <div style="font-family: 'Times New Roman', serif; padding: 20px; font-size: 14px; line-height: 1.5; color: #000;">
+                    <div style="text-align: center; color: #dc3545; font-size: 24px; font-weight: bold; margin-bottom: 5px;">BÀI THI & PHIẾU TRẢ LỜI TRẮC NGHIỆM ĐIỆN TỬ</div>
+                    <div style="text-align: center; font-size: 16px; margin-bottom: 20px; font-style: italic;">Hệ thống LMS & Khảo thí Đám mây - Trường TCN Củ Chi</div>
+                    
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                        <tr>
+                            <td style="width: 70%; border: 1px solid #000; padding: 10px;">
+                                <b>Họ và tên thí sinh:</b> ${currentStudentName.toUpperCase()}<br><br>
+                                <b>Lớp:</b> ${currentStudentClass.toUpperCase()}<br><br>
+                                <b>Môn thi:</b> ${currentCourseObj.title}
+                            </td>
+                            <td style="width: 30%; border: 1px solid #000; padding: 10px; text-align: center;">
+                                <b>TỔNG ĐIỂM</b><br>
+                                <div style="color: red; font-size: 32px; font-weight: bold; margin-top: 10px;">${sData.finalScore.toFixed(2)}</div>
+                            </td>
+                        </tr>
+                    </table>
+                    
+                    <h3 style="text-align:center; background:#f0f0f0; padding: 10px; border:1px solid #000;">TRANG 1: NỘI DUNG ĐỀ THI & ĐÁP ÁN ĐÃ CHỌN</h3>
             `;
 
             let part1Qs = selectedQuestions.filter(q => String(q.part || '1').trim() === '1' || String(q.part || '1').trim() === '');
+            let part2Qs = selectedQuestions.filter(q => String(q.part || '1').trim() === '2');
+            let part3Qs = selectedQuestions.filter(q => String(q.part || '1').trim() === '3');
+
+            // --- PHẦN I CHI TIẾT ---
             if (part1Qs.length > 0) {
-                html += `<div class='section-title'>PHẦN I. Câu trắc nghiệm nhiều lựa chọn</div><table class='grid-table'><tr>`;
+                pdfHtml += `<div style="font-weight: bold; margin-top: 20px; margin-bottom: 10px; text-transform: uppercase;">PHẦN I. Câu trắc nghiệm nhiều lựa chọn (Đạt: ${sData.score1.toFixed(2)} điểm)</div>`;
+                part1Qs.forEach((q, idx) => {
+                    let ans = studentAnswers.part1[q.id] || '';
+                    let correctAns = String(q.answer).trim().toUpperCase();
+                    let earned = (ans === correctAns) ? sData.unitScore : 0;
+                    
+                    pdfHtml += `<div style="margin-bottom: 15px;"><b>Câu ${idx + 1}:</b> ${q.question} <i style="color:red;">[Điểm: ${earned.toFixed(2)}/${sData.unitScore.toFixed(2)}]</i><br>`;
+                    ['A','B','C','D'].forEach(opt => {
+                        let isSel = (ans === opt);
+                        let isCorr = (correctAns === opt);
+                        let text = q['option_' + opt.toLowerCase()] || '';
+                        let mark = isSel ? '[X]' : '[&nbsp;&nbsp;]';
+                        let style = isCorr ? 'color: green; font-weight: bold;' : (isSel ? 'color: blue;' : 'color: #000;');
+                        let corrLabel = isCorr ? ' <b>&larr; (ĐÁP ÁN ĐÚNG)</b>' : '';
+                        pdfHtml += `<span style="${style}">${mark} ${opt}. ${text}${corrLabel}</span><br>`;
+                    });
+                    pdfHtml += `</div>`;
+                });
+            }
+
+            // --- PHẦN II CHI TIẾT ---
+            if (part2Qs.length > 0) {
+                pdfHtml += `<div style="font-weight: bold; margin-top: 20px; margin-bottom: 10px; text-transform: uppercase;">PHẦN II. Câu trắc nghiệm Đúng/Sai (Đạt: ${sData.score2.toFixed(2)} điểm)</div>`;
+                part2Qs.forEach((q, idx) => {
+                    let subOptions = (q.question || "").replace(/\\\\n/g, '\n').replace(/\\n/g, '\n').split('\n');
+                    let titleQ = subOptions[0];
+                    let correctAnsArray = String(q.answer || "").split('|');
+                    
+                    pdfHtml += `<div style="margin-bottom: 15px;"><b>Câu ${idx + 1}:</b> ${titleQ}<br>`;
+                    if(subOptions.length > 1) {
+                        for(let i=1; i<subOptions.length; i++) {
+                            if(!subOptions[i].trim()) continue;
+                            let subChar = String.fromCharCode(96 + i);
+                            let ans = studentAnswers.part2[`${q.id}_${subChar}`] || 'Chưa chọn';
+                            let cAns = (i-1 < correctAnsArray.length) ? correctAnsArray[i-1].trim().toUpperCase() : '';
+                            let earned = (ans === cAns) ? sData.unitScore : 0;
+                            
+                            pdfHtml += `<div style="margin-left:20px;">${subChar}) ${subOptions[i]} <i style="color:red;">[Điểm: ${earned.toFixed(2)}/${sData.unitScore.toFixed(2)}]</i><br>`;
+                            pdfHtml += `<span style="${ans === cAns ? 'color:green;font-weight:bold;' : 'color:blue;'}">&rarr; Thí sinh chọn: ${ans}</span> | <b>Đáp án gốc: ${cAns}</b></div>`;
+                        }
+                    } else {
+                        let ans = studentAnswers.part2[q.id] || 'Chưa chọn';
+                        let cAns = correctAnsArray[0].trim().toUpperCase();
+                        let earned = (ans === cAns) ? sData.unitScore : 0;
+                        pdfHtml += `<div style="margin-left:20px;"><i style="color:red;">[Điểm: ${earned.toFixed(2)}/${sData.unitScore.toFixed(2)}]</i><br>`;
+                        pdfHtml += `<span style="${ans === cAns ? 'color:green;font-weight:bold;' : 'color:blue;'}">&rarr; Thí sinh chọn: ${ans}</span> | <b>Đáp án gốc: ${cAns}</b></div>`;
+                    }
+                    pdfHtml += `</div>`;
+                });
+            }
+
+            // --- PHẦN III CHI TIẾT ---
+            if (part3Qs.length > 0) {
+                pdfHtml += `<div style="font-weight: bold; margin-top: 20px; margin-bottom: 10px; text-transform: uppercase;">PHẦN III. Câu trả lời ngắn (Đạt: ${sData.score3.toFixed(2)} điểm)</div>`;
+                part3Qs.forEach((q, idx) => {
+                    let ans = studentAnswers.part3[q.id] || 'Chưa trả lời';
+                    let cAns = String(q.answer || "").trim().toUpperCase();
+                    let earned = (ans.toUpperCase() === cAns) ? sData.unitScore : 0;
+                    
+                    pdfHtml += `<div style="margin-bottom: 15px;"><b>Câu ${idx + 1}:</b> ${q.question} <i style="color:red;">[Điểm: ${earned.toFixed(2)}/${sData.unitScore.toFixed(2)}]</i><br>`;
+                    pdfHtml += `<div style="margin-left:20px;"><span style="${ans.toUpperCase() === cAns ? 'color:green;font-weight:bold;' : 'color:blue;'}">&rarr; Thí sinh điền: ${ans}</span> | <b>Đáp án gốc: ${cAns}</b></div></div>`;
+                });
+            }
+
+            // ================== NGẮT TRANG PDF TỰ ĐỘNG ==================
+            pdfHtml += `<div class="html2pdf__page-break"></div>`;
+            pdfHtml += `<h3 style="text-align:center; background:#f0f0f0; padding: 10px; border:1px solid #000; margin-top: 20px;">TRANG 2: PHIẾU BÁO CÁO TỔNG QUÁT BONG BÓNG (MẪU BỘ)</h3>`;
+            
+            // --- BẢNG BONG BÓNG ---
+            let circleStyle = "display:inline-block; width:22px; height:22px; border:1px solid #000; border-radius:50%; text-align:center; line-height:22px; font-size:12px; margin-right:8px;";
+            let filledStyle = "background-color:#000; color:#fff; font-weight:bold;";
+
+            if (part1Qs.length > 0) {
+                pdfHtml += `<div style="font-weight:bold; margin-top:15px; margin-bottom:10px;">PHẦN I. Câu trắc nghiệm nhiều lựa chọn</div><table style="width:100%; border-collapse:collapse;"><tr>`;
                 let count = 0;
                 part1Qs.forEach((q, idx) => {
-                    if (count > 0 && count % 4 === 0) html += `</tr><tr>`;
+                    if (count > 0 && count % 4 === 0) pdfHtml += `</tr><tr>`;
                     let ans = studentAnswers.part1[q.id] || '';
-                    html += `<td><b>Câu ${idx + 1}:</b> `;
-                    ['A','B','C','D'].forEach(opt => {
-                        html += `<span class='circle ${ans === opt ? 'filled' : ''}'>${opt}</span>`;
-                    });
-                    html += `</td>`;
+                    pdfHtml += `<td style="padding: 10px 5px;"><b>Câu ${idx + 1}:</b> `;
+                    ['A','B','C','D'].forEach(opt => { pdfHtml += `<span style="${circleStyle} ${ans === opt ? filledStyle : ''}">${opt}</span>`; });
+                    pdfHtml += `</td>`;
                     count++;
                 });
-                html += `</tr></table>`;
+                pdfHtml += `</tr></table>`;
             }
 
-            let part2Qs = selectedQuestions.filter(q => String(q.part || '1').trim() === '2');
             if (part2Qs.length > 0) {
-                html += `<div class='section-title'>PHẦN II. Câu trắc nghiệm Đúng/Sai</div><table class='grid-table'><tr>`;
+                pdfHtml += `<div style="font-weight:bold; margin-top:20px; margin-bottom:10px;">PHẦN II. Câu trắc nghiệm Đúng/Sai</div><table style="width:100%; border-collapse:collapse;"><tr>`;
                 let count = 0;
                 part2Qs.forEach((q, idx) => {
-                    if (count > 0 && count % 4 === 0) html += `</tr><tr>`;
-                    html += `<td style='border: 1px solid #000; padding: 10px;'><b>Câu ${idx + 1}</b><br>`;
-                    let ansArray = String(q.answer || "").split('|');
-                    if (ansArray.length > 1) {
-                        ['a','b','c','d'].forEach((sub, i) => {
-                            if(i < ansArray.length) {
-                                let ans = studentAnswers.part2[`${q.id}_${sub}`] || '';
-                                html += `${sub}) &nbsp; <span class='circle ${ans === 'Đ' ? 'filled' : ''}'>Đ</span> <span class='circle ${ans === 'S' ? 'filled' : ''}'>S</span><br>`;
-                            }
-                        });
+                    if (count > 0 && count % 4 === 0) pdfHtml += `</tr><tr>`;
+                    pdfHtml += `<td style='border:1px solid #000; padding:10px; vertical-align:top;'><b>Câu ${idx + 1}</b><br><br>`;
+                    let subOptions = (q.question || "").replace(/\\\\n/g, '\n').replace(/\\n/g, '\n').split('\n');
+                    if (subOptions.length > 1) {
+                        for(let i=1; i<subOptions.length; i++) {
+                            if(!subOptions[i].trim()) continue;
+                            let subChar = String.fromCharCode(96 + i);
+                            let ans = studentAnswers.part2[`${q.id}_${subChar}`] || '';
+                            pdfHtml += `${subChar}) &nbsp; <span style="${circleStyle} ${ans === 'Đ' ? filledStyle : ''}">Đ</span> <span style="${circleStyle} ${ans === 'S' ? filledStyle : ''}">S</span><br><br>`;
+                        }
                     } else {
                         let ans = studentAnswers.part2[q.id] || '';
-                        html += `Đ/S: &nbsp; <span class='circle ${ans === 'Đ' ? 'filled' : ''}'>Đ</span> <span class='circle ${ans === 'S' ? 'filled' : ''}'>S</span><br>`;
+                        pdfHtml += `Đ/S: &nbsp; <span style="${circleStyle} ${ans === 'Đ' ? filledStyle : ''}">Đ</span> <span style="${circleStyle} ${ans === 'S' ? filledStyle : ''}">S</span><br>`;
                     }
-                    html += `</td>`;
+                    pdfHtml += `</td>`;
                     count++;
                 });
-                html += `</tr></table>`;
+                pdfHtml += `</tr></table>`;
             }
 
-            let part3Qs = selectedQuestions.filter(q => String(q.part || '1').trim() === '3');
             if (part3Qs.length > 0) {
-                html += `<div class='section-title'>PHẦN III. Câu trả lời ngắn</div><table class='grid-table'><tr>`;
+                pdfHtml += `<div style="font-weight:bold; margin-top:20px; margin-bottom:10px;">PHẦN III. Câu trả lời ngắn</div><table style="width:100%; border-collapse:collapse;"><tr>`;
                 let count = 0;
                 part3Qs.forEach((q, idx) => {
-                    if (count > 0 && count % 4 === 0) html += `</tr><tr>`;
+                    if (count > 0 && count % 4 === 0) pdfHtml += `</tr><tr>`;
                     let ans = studentAnswers.part3[q.id] || '';
-                    html += `<td style='border: 1px solid #000; padding: 10px; text-align: center;'><b>Câu ${idx + 1}</b><br><br><div style='border: 1px dashed #000; padding: 5px; font-weight: bold;'>${ans}</div></td>`;
+                    pdfHtml += `<td style='border: 1px solid #000; padding: 10px; text-align: center; vertical-align:top;'><b>Câu ${idx + 1}</b><br><br><div style='border: 1px dashed #000; padding: 5px; font-weight: bold; color:blue;'>${ans}</div></td>`;
                     count++;
                 });
-                html += `</tr></table>`;
+                pdfHtml += `</tr></table>`;
             }
 
-            html += `</body></html>`;
+            pdfHtml += `</div>`; // End container
 
-            let blob = new Blob(['\ufeff', html], { type: 'application/msword' });
-            let url = URL.createObjectURL(blob);
-            let link = document.createElement("a");
-            link.href = url;
-            link.download = `PhieuTraLoi_${currentStudentClass}_${currentStudentName.replace(/\s+/g, '')}.doc`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            // Tạo một the div tạm thời để nhúng HTML vào và gọi thư viện render PDF
+            let tempDiv = document.createElement('div');
+            tempDiv.innerHTML = pdfHtml;
+            
+            let opt = {
+                margin:       10,
+                filename:     `Phieu_Cham_Diem_${currentStudentClass}_${currentStudentName.replace(/\s+/g, '')}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2 },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            // Thông báo đang xuất
+            let btn = document.querySelector("button[onclick='exportPDFReport()']");
+            let oldText = btn.innerHTML;
+            btn.innerHTML = "⏳ Đang tạo file PDF, vui lòng chờ...";
+            btn.disabled = true;
+
+            html2pdf().set(opt).from(tempDiv).save().then(() => {
+                btn.innerHTML = oldText;
+                btn.disabled = false;
+            });
         }
 
         async function lookupResults() {
