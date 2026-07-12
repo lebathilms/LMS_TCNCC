@@ -41,7 +41,7 @@
 <body>
     <div class="container mt-4 mb-5">
         <h2 class="text-center mb-1 text-success fw-bold">HỆ THỐNG LMS & KHẢO THÍ ĐÁM MÂY</h2>
-        <p class="text-center text-muted mb-4">Trường Trung cấp nghề Củ Chi - Phiên bản PDF tự động chấm điểm chuẩn</p>
+        <p class="text-center text-muted mb-4">Trường Trung cấp nghề Củ Chi - Định danh MSSV chống trùng lặp</p>
         
         <div class="row mt-4">
             <div class="col-md-4">
@@ -56,8 +56,9 @@
                     <h5 class="card-header bg-primary text-white fw-bold">🔍 Tra cứu điểm thi</h5>
                     <div class="card-body">
                         <div class="mb-3">
-                            <input type="text" id="search_student_name" class="form-control mb-2" placeholder="Nhập họ và tên...">
-                            <input type="text" id="search_student_class" class="form-control" placeholder="Nhập lớp (VD: ĐT24)...">
+                            <input type="text" id="search_student_id" class="form-control mb-2 border-primary" placeholder="Nhập Mã số sinh viên (MSSV)...">
+                            <input type="text" id="search_student_name" class="form-control mb-2" placeholder="Hoặc nhập Họ và tên...">
+                            <input type="text" id="search_student_class" class="form-control" placeholder="Nhập Lớp (VD: ĐT24)...">
                         </div>
                         <button onclick="lookupResults()" class="btn btn-outline-primary w-100 fw-bold">Xem lịch sử thi</button>
                         <div id="lookup-output" class="mt-3" style="max-height: 250px; overflow-y: auto;"></div>
@@ -88,7 +89,9 @@
         let allCourses = []; let allLessons = []; let allQuestions = [];
         let currentCourseId = null; let currentCourseObj = null;
         let currentTab = 'lessons'; let timerInterval = null;
-        let currentStudentName = ""; let currentStudentClass = "";
+        
+        // Thêm biến currentStudentId
+        let currentStudentId = ""; let currentStudentName = ""; let currentStudentClass = "";
 
         let selectedQuestions = [];
         let studentAnswers = { part1: {}, part2: {}, part3: {} };
@@ -200,6 +203,7 @@
                 <h5 class="mb-4 border-bottom pb-3 text-danger fw-bold text-center">PHÒNG KHẢO THÍ HỆ THỐNG MẪU 3 PHẦN</h5>
                 <div class="card shadow p-5 border-0 bg-light rounded-4">
                     <div class="row g-4 text-start" style="max-width: 500px; margin: 0 auto;">
+                        <div class="col-12"><label class="form-label fw-bold text-secondary">Mã số sinh viên (MSSV):</label><input type="text" id="student_id" class="form-control form-control-lg border-primary" placeholder="Nhập chính xác MSSV..." required></div>
                         <div class="col-12"><label class="form-label fw-bold text-secondary">Họ và Tên thí sinh:</label><input type="text" id="student_name" class="form-control form-control-lg border-primary" required></div>
                         <div class="col-12"><label class="form-label fw-bold text-secondary">Lớp:</label><input type="text" id="student_class" class="form-control form-control-lg border-primary" required></div>
                         <div class="col-12 p-3 mt-4 bg-white border rounded shadow-sm">
@@ -218,6 +222,7 @@
         }
 
         function startDigitalExam() {
+            const idSV = document.getElementById('student_id').value.trim();
             const name = document.getElementById('student_name').value.trim();
             const sClass = document.getElementById('student_class').value.trim();
             const configParams = document.getElementById('quiz_custom_limit').value.split('|');
@@ -234,13 +239,13 @@
             let pool2 = filteredQuestions.filter(q => String(q.part || '1').trim() === '2');
             let pool3 = filteredQuestions.filter(q => String(q.part || '1').trim() === '3');
 
-            if(!name || !sClass) { alert("Vui lòng điền đủ Họ tên và Lớp!"); return; }
+            if(!idSV || !name || !sClass) { alert("Vui lòng điền đủ MSSV, Họ tên và Lớp!"); return; }
             if(pool1.length < reqPart1 || pool2.length < reqPart2 || pool3.length < reqPart3) { 
                 alert(`Ngân hàng đề không đủ câu hỏi để chia tỷ lệ!\nCần: ${reqPart1} câu P1, ${reqPart2} câu P2, ${reqPart3} câu P3.`); 
                 return; 
             }
 
-            currentStudentName = name; currentStudentClass = sClass;
+            currentStudentId = idSV; currentStudentName = name; currentStudentClass = sClass;
             studentAnswers = { part1: {}, part2: {}, part3: {} };
             currentQuestionIndex = 0;
 
@@ -258,9 +263,9 @@
                     <h5 class="text-danger fw-bold m-0 fs-4">ĐANG LÀM BÀI MÔN: ${currentCourseObj.title}</h5>
                     <div id="countdown-timer">⏰ ${quizTimeMinutes}:00</div>
                 </div>
-                <div class="alert alert-secondary py-2 border-0 shadow-sm d-flex justify-content-between align-items-center">
-                    <div>Thí sinh: <strong>${currentStudentName}</strong> - Lớp: <strong>${currentStudentClass}</strong></div>
-                    <div class="fw-bold text-success">Gói thi: ${selectedQuestions.length} câu (P1: ${reqPart1}, P2: ${reqPart2}, P3: ${reqPart3})</div>
+                <div class="alert alert-secondary py-2 border-0 shadow-sm d-flex justify-content-between align-items-center flex-wrap">
+                    <div>Thí sinh: <strong>${currentStudentName}</strong> - MSSV: <strong class="text-primary">${currentStudentId}</strong> - Lớp: <strong>${currentStudentClass}</strong></div>
+                    <div class="fw-bold text-success mt-2 mt-md-0">Gói thi: ${selectedQuestions.length} câu</div>
                 </div>
                 
                 <div class="card p-3 mb-4 bg-light border-0 shadow-sm">
@@ -319,7 +324,6 @@
                 html += `<div class="part-indicator bg-danger">PHẦN II. Câu hỏi trắc nghiệm Đúng/Sai</div>`;
                 let subOptions = (q.question || "").replace(/\\\\n/g, '\n').replace(/\\n/g, '\n').split('\n');
                 let titleQ = subOptions[0];
-                
                 html += `<h4 class="fw-bold text-dark mb-4"><span class="text-danger">Câu ${currentQuestionIndex + 1}:</span> ${titleQ}</h4>`;
                 
                 if(subOptions.length > 1) {
@@ -441,7 +445,7 @@
             container.innerHTML = `
                 <div class="card shadow p-5 border-0 text-center rounded-4 mt-4">
                     <h2 class="text-success fw-bold mb-4">🎉 HOÀN THÀNH BÀI THI</h2>
-                    <p class="fs-4 text-muted">Thí sinh: <strong class="text-dark">${currentStudentName.toUpperCase()}</strong> - Lớp: <strong class="text-dark">${currentStudentClass.toUpperCase()}</strong></p>
+                    <p class="fs-4 text-muted">Thí sinh: <strong class="text-dark">${currentStudentName.toUpperCase()}</strong> - MSSV: <strong class="text-dark">${currentStudentId}</strong></p>
                     <div class="display-3 fw-bold text-primary mb-4 border py-4 bg-light rounded-4">${finalScore.toFixed(2)} <span class="fs-4 text-muted">Điểm</span></div>
                     <div class="row justify-content-center gap-2 mb-4">
                         <div class="col-md-3 badge bg-success fs-6 p-3">Phần I: ${score1.toFixed(2)}đ</div>
@@ -453,14 +457,22 @@
                     </button>
                 </div>`;
             
-            fetch(SCRIPT_WEB_APP_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ student_name: currentStudentName, student_class: currentStudentClass, course_title: currentCourseObj.title, score: parseFloat(finalScore.toFixed(2)) }) }).catch(e => console.log(e));
+            // Bổ sung student_id vào gói gửi lên Google Sheets (Thầy nhớ cập nhật Code.gs trên Google Apps Script để nhận thêm cột này nhé)
+            fetch(SCRIPT_WEB_APP_URL, { 
+                method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify({ 
+                    student_id: currentStudentId,
+                    student_name: currentStudentName, 
+                    student_class: currentStudentClass, 
+                    course_title: currentCourseObj.title, 
+                    score: parseFloat(finalScore.toFixed(2)) 
+                }) 
+            }).catch(e => console.log(e));
         }
 
-        // HÀM XUẤT RA FILE PDF CHUẨN (KHÔNG BỊ CẮT TRANG, CHỐNG RỚT DÒNG)
         function exportPDFReport() {
             let sData = finalScoreData;
             
-            // CSS chống cắt trang: page-break-inside: avoid;
             let pdfHtml = `
                 <div style="font-family: 'Times New Roman', serif; padding: 20px; font-size: 14px; line-height: 1.5; color: #000; width: 100%;">
                     <div style="text-align: center; color: #dc3545; font-size: 22px; font-weight: bold; margin-bottom: 5px;">BÀI THI & PHIẾU TRẢ LỜI TRẮC NGHIỆM ĐIỆN TỬ</div>
@@ -470,7 +482,7 @@
                         <tr>
                             <td style="width: 70%; border: 1px solid #000; padding: 10px;">
                                 <b>Họ và tên thí sinh:</b> ${currentStudentName.toUpperCase()}<br><br>
-                                <b>Lớp:</b> ${currentStudentClass.toUpperCase()}<br><br>
+                                <b>Mã số sinh viên:</b> ${currentStudentId} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>Lớp:</b> ${currentStudentClass.toUpperCase()}<br><br>
                                 <b>Môn thi:</b> ${currentCourseObj.title}
                             </td>
                             <td style="width: 30%; border: 1px solid #000; padding: 10px; text-align: center;">
@@ -487,7 +499,6 @@
             let part2Qs = selectedQuestions.filter(q => String(q.part || '1').trim() === '2');
             let part3Qs = selectedQuestions.filter(q => String(q.part || '1').trim() === '3');
 
-            // --- PHẦN I CHI TIẾT ---
             if (part1Qs.length > 0) {
                 pdfHtml += `<div style="font-weight: bold; margin-top: 15px; margin-bottom: 10px; text-transform: uppercase;">PHẦN I. Câu trắc nghiệm nhiều lựa chọn (Đạt: ${sData.score1.toFixed(2)} điểm)</div>`;
                 part1Qs.forEach((q, idx) => {
@@ -495,7 +506,6 @@
                     let correctAns = String(q.answer).trim().toUpperCase();
                     let earned = (ans === correctAns) ? sData.unitScore : 0;
                     
-                    // Sử dụng page-break-inside: avoid để chống cắt câu hỏi
                     pdfHtml += `<div style="margin-bottom: 15px; page-break-inside: avoid; break-inside: avoid;"><b>Câu ${idx + 1}:</b> ${q.question} <i style="color:red;">[Điểm: ${earned.toFixed(2)}/${sData.unitScore.toFixed(2)}]</i><br>`;
                     ['A','B','C','D'].forEach(opt => {
                         let isSel = (ans === opt);
@@ -510,7 +520,6 @@
                 });
             }
 
-            // --- PHẦN II CHI TIẾT ---
             if (part2Qs.length > 0) {
                 pdfHtml += `<div style="font-weight: bold; margin-top: 15px; margin-bottom: 10px; text-transform: uppercase;">PHẦN II. Câu trắc nghiệm Đúng/Sai (Đạt: ${sData.score2.toFixed(2)} điểm)</div>`;
                 part2Qs.forEach((q, idx) => {
@@ -541,7 +550,6 @@
                 });
             }
 
-            // --- PHẦN III CHI TIẾT ---
             if (part3Qs.length > 0) {
                 pdfHtml += `<div style="font-weight: bold; margin-top: 15px; margin-bottom: 10px; text-transform: uppercase;">PHẦN III. Câu trả lời ngắn (Đạt: ${sData.score3.toFixed(2)} điểm)</div>`;
                 part3Qs.forEach((q, idx) => {
@@ -554,11 +562,9 @@
                 });
             }
 
-            // ================== NGẮT TRANG PDF TỰ ĐỘNG ==================
             pdfHtml += `<div class="html2pdf__page-break"></div>`;
             pdfHtml += `<h3 style="text-align:center; background:#f0f0f0; padding: 8px; border:1px solid #000; margin-top: 20px;">TRANG 2: PHIẾU BÁO CÁO TỔNG QUÁT BONG BÓNG</h3>`;
             
-            // --- BẢNG BONG BÓNG (Tối ưu Width 25% chống rớt hàng) ---
             let circleStyle = "display:inline-block; width:20px; height:20px; border:1px solid #000; border-radius:50%; text-align:center; line-height:20px; font-size:11px; margin-right:3px;";
             let filledStyle = "background-color:#000; color:#fff; font-weight:bold;";
 
@@ -615,16 +621,14 @@
                 pdfHtml += `</tr></table>`;
             }
 
-            pdfHtml += `</div>`; // End container
+            pdfHtml += `</div>`; 
 
-            // Tạo thẻ Div ảo để render PDF
             let tempDiv = document.createElement('div');
             tempDiv.innerHTML = pdfHtml;
             
-            // Cấu hình html2pdf để chống cắt ngang dòng (avoid-all)
             let opt = {
                 margin:       10,
-                filename:     `Phieu_Cham_Diem_${currentStudentClass}_${currentStudentName.replace(/\s+/g, '')}.pdf`,
+                filename:     `Phieu_Cham_Diem_${currentStudentId}_${currentStudentClass}.pdf`,
                 image:        { type: 'jpeg', quality: 0.98 },
                 html2canvas:  { scale: 2, useCORS: true },
                 jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
@@ -643,17 +647,30 @@
         }
 
         async function lookupResults() {
-            const name = document.getElementById('search_student_name').value.trim().toLowerCase(); const sClass = document.getElementById('search_student_class').value.trim().toLowerCase();
+            const idSV = document.getElementById('search_student_id').value.trim().toLowerCase();
+            const name = document.getElementById('search_student_name').value.trim().toLowerCase(); 
+            const sClass = document.getElementById('search_student_class').value.trim().toLowerCase();
             const output = document.getElementById('lookup-output');
-            if(!name || !sClass) { alert("Nhập đủ Họ tên & Lớp!"); return; }
+            
+            if(!idSV && !name && !sClass) { alert("Vui lòng nhập ít nhất một thông tin để tra cứu (MSSV, Họ tên hoặc Lớp)!"); return; }
+            
             output.innerHTML = '<div class="text-center text-primary fw-bold mt-2">⏳ Đang tìm...</div>';
             try {
                 const res = await fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=quiz_results`);
-                const match = parseCSV(await res.text()).filter(h => String(h["student_name"]||"").toLowerCase().includes(name) && String(h["student_class"]||"").toLowerCase() === sClass);
-                if(match.length === 0) { output.innerHTML = '<div class="alert alert-warning p-2 mt-2 text-center">Không có lịch sử thi.</div>'; } 
+                const match = parseCSV(await res.text()).filter(h => {
+                    let matchId = idSV === "" || String(h["student_id"]||"").toLowerCase() === idSV;
+                    let matchName = name === "" || String(h["student_name"]||"").toLowerCase().includes(name);
+                    let matchClass = sClass === "" || String(h["student_class"]||"").toLowerCase() === sClass;
+                    return matchId && matchName && matchClass;
+                });
+                
+                if(match.length === 0) { output.innerHTML = '<div class="alert alert-warning p-2 mt-2 text-center">Không có lịch sử thi khớp với yêu cầu.</div>'; } 
                 else {
                     let html = '<div class="list-group mt-2">';
-                    match.forEach(m => { html += `<div class="list-group-item p-3 mb-2 border-start border-primary border-4 shadow-sm"><div class="fw-bold text-dark mb-1">${m["course_title"]}</div><div class="d-flex justify-content-between align-items-center"><span class="text-muted small">${m["timestamp"]||''}</span><span class="badge bg-primary fs-6">${m["score"]} Điểm</span></div></div>`; });
+                    match.forEach(m => { 
+                        let idText = m["student_id"] ? ` - MSSV: ${m["student_id"]}` : '';
+                        html += `<div class="list-group-item p-3 mb-2 border-start border-primary border-4 shadow-sm"><div class="fw-bold text-dark mb-1">${m["course_title"]}</div><div class="d-flex justify-content-between align-items-center"><span class="text-muted small">${m["timestamp"]||''}${idText}</span><span class="badge bg-primary fs-6">${m["score"]} Điểm</span></div></div>`; 
+                    });
                     output.innerHTML = html + '</div>';
                 }
             } catch (e) { output.innerHTML = `<div class="alert alert-danger p-2 mt-2">Lỗi: ${e.message}</div>`; }
