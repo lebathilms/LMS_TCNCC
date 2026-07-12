@@ -41,7 +41,7 @@
 <body>
     <div class="container mt-4 mb-5">
         <h2 class="text-center mb-1 text-success fw-bold">HỆ THỐNG LMS & KHẢO THÍ ĐÁM MÂY</h2>
-        <p class="text-center text-muted mb-4">Trường Trung cấp nghề Củ Chi - Định danh MSSV chống trùng lặp</p>
+        <p class="text-center text-muted mb-4">Trường Trung cấp nghề Củ Chi - Định dạng Mã đề trình ký chuyên nghiệp</p>
         
         <div class="row mt-4">
             <div class="col-md-4">
@@ -90,14 +90,31 @@
         let currentCourseId = null; let currentCourseObj = null;
         let currentTab = 'lessons'; let timerInterval = null;
         
-        // Thêm biến currentStudentId
-        let currentStudentId = ""; let currentStudentName = ""; let currentStudentClass = "";
-
+        let currentStudentId = ""; let currentStudentName = ""; let currentStudentClass = ""; let currentExamCode = "";
         let selectedQuestions = [];
         let studentAnswers = { part1: {}, part2: {}, part3: {} };
         let currentQuestionIndex = 0;
-
         let finalScoreData = {};
+
+        // THUẬT TOÁN GIEO HẠT (SEED RANDOM) - ĐẢM BẢO MÃ ĐỀ KHÔNG ĐỔI
+        function mulberry32(a) {
+            return function() {
+              var t = a += 0x6D2B79F5;
+              t = Math.imul(t ^ t >>> 15, t | 1);
+              t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+              return ((t ^ t >>> 14) >>> 0) / 4294967296;
+            }
+        }
+
+        function shuffleArrayWithSeed(array, seed) {
+            let prng = mulberry32(seed);
+            let result = [...array];
+            for (let i = result.length - 1; i > 0; i--) {
+                const j = Math.floor(prng() * (i + 1));
+                [result[i], result[j]] = [result[j], result[i]];
+            }
+            return result;
+        }
 
         function parseCSV(text) {
             text = text.replace(/[\u200B-\u200D\uFEFF]/g, '');
@@ -105,8 +122,7 @@
             for (let i = 0; i < text.length; i++) {
                 let c = text[i]; let next = text[i+1];
                 if (c === '"') {
-                    if (inQuotes && next === '"') { row[row.length - 1] += '"'; i++; }
-                    else { inQuotes = !inQuotes; }
+                    if (inQuotes && next === '"') { row[row.length - 1] += '"'; i++; } else { inQuotes = !inQuotes; }
                 } else if (c === ',' && !inQuotes) { row.push(''); }
                 else if ((c === '\r' || c === '\n') && !inQuotes) {
                     if (c === '\r' && next === '\n') { i++; }
@@ -183,13 +199,7 @@
             } else {
                 filteredLessons.forEach(lesson => {
                     let cleanContent = (lesson.content || "").replace(/\\\\n/g, '\n').replace(/\\n/g, '\n');
-                    html += `
-                        <div class="card mb-4 shadow-sm border-0 border-start border-success border-4">
-                            <div class="card-body p-4">
-                                <h5 class="card-title text-success fw-bold fs-5 mb-3">${lesson.title || 'Bài học'}</h5>
-                                <p class="card-text text-dark" style="white-space: pre-line; line-height: 1.8;">${cleanContent}</p>
-                            </div>
-                        </div>`;
+                    html += `<div class="card mb-4 shadow-sm border-0 border-start border-success border-4"><div class="card-body p-4"><h5 class="card-title text-success fw-bold fs-5 mb-3">${lesson.title || 'Bài học'}</h5><p class="card-text text-dark" style="white-space: pre-line; line-height: 1.8;">${cleanContent}</p></div></div>`;
                 });
             }
             container.innerHTML = html;
@@ -197,7 +207,6 @@
 
         function renderQuizPrepare() {
             const container = document.getElementById('main-content-container');
-            const filteredQuestions = allQuestions.filter(q => String(q.course_id || "").trim() === currentCourseId);
             
             html = `
                 <h5 class="mb-4 border-bottom pb-3 text-danger fw-bold text-center">PHÒNG KHẢO THÍ HỆ THỐNG MẪU 3 PHẦN</h5>
@@ -206,66 +215,181 @@
                         <div class="col-12"><label class="form-label fw-bold text-secondary">Mã số sinh viên (MSSV):</label><input type="text" id="student_id" class="form-control form-control-lg border-primary" placeholder="Nhập chính xác MSSV..." required></div>
                         <div class="col-12"><label class="form-label fw-bold text-secondary">Họ và Tên thí sinh:</label><input type="text" id="student_name" class="form-control form-control-lg border-primary" required></div>
                         <div class="col-12"><label class="form-label fw-bold text-secondary">Lớp:</label><input type="text" id="student_class" class="form-control form-control-lg border-primary" required></div>
+                        
                         <div class="col-12 p-3 mt-4 bg-white border rounded shadow-sm">
-                            <label class="form-label fw-bold text-danger mb-2">Chọn cấu trúc đề thi (Số câu & Thời gian):</label>
-                            <select id="quiz_custom_limit" class="form-select form-select-lg border-danger fw-bold text-center">
+                            <label class="form-label fw-bold text-danger mb-2">Chọn Mã Đề Thi:</label>
+                            <select id="exam_code" class="form-select form-select-lg border-danger fw-bold text-center mb-3">
+                                <option value="101">Mã đề 101</option>
+                                <option value="102">Mã đề 102</option>
+                                <option value="103">Mã đề 103</option>
+                                <option value="104">Mã đề 104</option>
+                            </select>
+                            
+                            <label class="form-label fw-bold text-danger mb-2">Cấu trúc đề (Số câu & Thời gian):</label>
+                            <select id="quiz_custom_limit" class="form-select border-danger fw-bold text-center">
                                 <option value="20|15">20 câu - Thời gian: 15 phút</option>
                                 <option value="40|60">40 câu - Thời gian: 60 phút</option>
                                 <option value="80|120">80 câu - Thời gian: 120 phút</option>
                             </select>
-                            <small class="text-muted d-block mt-2 text-center">* Cố định: 6 câu Đúng/Sai & 4 câu Tự luận. Còn lại trắc nghiệm.</small>
+                            <small class="text-muted d-block mt-2 text-center">* Cố định: 6 câu Đúng/Sai & 4 câu Tự luận.</small>
                         </div>
                     </div>
-                    <div class="text-center mt-5"><button onclick="startDigitalExam()" class="btn btn-danger btn-lg px-5 py-3 fw-bold shadow rounded-pill fs-5">🚀 Bắt Đầu Làm Bài</button></div>
+                    
+                    <div class="d-flex justify-content-center gap-3 mt-5">
+                        <button onclick="startDigitalExam()" class="btn btn-danger btn-lg fw-bold shadow rounded-pill fs-5">🚀 Học sinh: Làm Bài</button>
+                        <button onclick="exportTeacherExam()" class="btn btn-outline-dark btn-lg fw-bold shadow-sm rounded-pill fs-5">🖨️ GV: In Đề Trình Ký</button>
+                    </div>
                 </div>`;
             container.innerHTML = html;
         }
 
-        function startDigitalExam() {
-            const idSV = document.getElementById('student_id').value.trim();
-            const name = document.getElementById('student_name').value.trim();
-            const sClass = document.getElementById('student_class').value.trim();
-            const configParams = document.getElementById('quiz_custom_limit').value.split('|');
-            const limitInput = parseInt(configParams[0]);
-            const quizTimeMinutes = parseInt(configParams[1]);
-            
+        // HÀM LẤY CÂU HỎI THEO MÃ ĐỀ (CỐ ĐỊNH 100%)
+        function getQuestionsByCode(examCode, limitInput) {
             const filteredQuestions = allQuestions.filter(q => String(q.course_id || "").trim() === currentCourseId);
-            
-            const reqPart2 = 6;
-            const reqPart3 = 4;
-            const reqPart1 = limitInput - reqPart2 - reqPart3;
+            const reqPart2 = 6; const reqPart3 = 4; const reqPart1 = limitInput - reqPart2 - reqPart3;
 
             let pool1 = filteredQuestions.filter(q => String(q.part || '1').trim() === '1' || String(q.part || '1').trim() === '');
             let pool2 = filteredQuestions.filter(q => String(q.part || '1').trim() === '2');
             let pool3 = filteredQuestions.filter(q => String(q.part || '1').trim() === '3');
 
-            if(!idSV || !name || !sClass) { alert("Vui lòng điền đủ MSSV, Họ tên và Lớp!"); return; }
             if(pool1.length < reqPart1 || pool2.length < reqPart2 || pool3.length < reqPart3) { 
                 alert(`Ngân hàng đề không đủ câu hỏi để chia tỷ lệ!\nCần: ${reqPart1} câu P1, ${reqPart2} câu P2, ${reqPart3} câu P3.`); 
-                return; 
+                return null; 
             }
 
-            currentStudentId = idSV; currentStudentName = name; currentStudentClass = sClass;
+            // Dùng Mã đề để tạo "hạt giống" cố định
+            let baseSeed = parseInt(examCode) + (parseInt(currentCourseId) * 100);
+
+            let p1Selected = shuffleArrayWithSeed(pool1, baseSeed).slice(0, reqPart1);
+            let p2Selected = shuffleArrayWithSeed(pool2, baseSeed + 1).slice(0, reqPart2);
+            let p3Selected = shuffleArrayWithSeed(pool3, baseSeed + 2).slice(0, reqPart3);
+            
+            return [...p1Selected, ...p2Selected, ...p3Selected];
+        }
+
+        // DÀNH CHO GIÁO VIÊN: IN ĐỀ VÀ ĐÁP ÁN TRÌNH KÝ BGH
+        function exportTeacherExam() {
+            const eCode = document.getElementById('exam_code').value;
+            const configParams = document.getElementById('quiz_custom_limit').value.split('|');
+            const limitInput = parseInt(configParams[0]);
+            const quizTimeMinutes = parseInt(configParams[1]);
+
+            let questions = getQuestionsByCode(eCode, limitInput);
+            if(!questions) return;
+
+            let pdfHtml = `
+                <div style="font-family: 'Times New Roman', serif; padding: 20px; font-size: 14px; line-height: 1.5; color: #000; width: 100%;">
+                    <table style="width: 100%; text-align: center; font-weight: bold; margin-bottom: 20px; border: none;">
+                        <tr>
+                            <td style="width: 50%;">SỞ LAO ĐỘNG TB & XH TP.HCM<br>TRƯỜNG TRUNG CẤP NGHỀ CỦ CHI<br>---------------</td>
+                            <td style="width: 50%;">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM<br>Độc lập - Tự do - Hạnh phúc<br>---------------</td>
+                        </tr>
+                    </table>
+                    
+                    <div style="text-align: center; font-size: 20px; font-weight: bold; margin-bottom: 10px;">ĐỀ THI & ĐÁP ÁN TRÌNH KÝ</div>
+                    <div style="text-align: center; font-size: 14px; margin-bottom: 20px;">Môn thi: ${currentCourseObj.title} | Mã đề: <b>${eCode}</b> | Thời gian: ${quizTimeMinutes} phút</div>
+            `;
+
+            let part1Qs = questions.filter(q => String(q.part || '1').trim() === '1' || String(q.part || '1').trim() === '');
+            let part2Qs = questions.filter(q => String(q.part || '1').trim() === '2');
+            let part3Qs = questions.filter(q => String(q.part || '1').trim() === '3');
+
+            if (part1Qs.length > 0) {
+                pdfHtml += `<div style="font-weight: bold; margin-top: 15px; margin-bottom: 10px; text-transform: uppercase;">PHẦN I. Câu trắc nghiệm nhiều lựa chọn</div>`;
+                part1Qs.forEach((q, idx) => {
+                    let correctAns = String(q.answer).trim().toUpperCase();
+                    pdfHtml += `<div style="margin-bottom: 15px; page-break-inside: avoid; break-inside: avoid;"><b>Câu ${idx + 1}:</b> ${q.question}<br>`;
+                    ['A','B','C','D'].forEach(opt => {
+                        let isCorr = (correctAns === opt);
+                        let text = q['option_' + opt.toLowerCase()] || '';
+                        let style = isCorr ? 'color: red; font-weight: bold;' : 'color: #000;';
+                        let mark = isCorr ? '[X]' : '[  ]';
+                        pdfHtml += `<div style="${style}">${mark} ${opt}. ${text}</div>`;
+                    });
+                    pdfHtml += `</div>`;
+                });
+            }
+
+            if (part2Qs.length > 0) {
+                pdfHtml += `<div style="font-weight: bold; margin-top: 15px; margin-bottom: 10px; text-transform: uppercase;">PHẦN II. Câu trắc nghiệm Đúng/Sai</div>`;
+                part2Qs.forEach((q, idx) => {
+                    let subOptions = (q.question || "").replace(/\\\\n/g, '\n').replace(/\\n/g, '\n').split('\n');
+                    let titleQ = subOptions[0];
+                    let correctAnsArray = String(q.answer || "").split('|');
+                    
+                    pdfHtml += `<div style="margin-bottom: 15px; page-break-inside: avoid; break-inside: avoid;"><b>Câu ${idx + 1}:</b> ${titleQ}<br>`;
+                    if(subOptions.length > 1) {
+                        for(let i=1; i<subOptions.length; i++) {
+                            if(!subOptions[i].trim()) continue;
+                            let subChar = String.fromCharCode(96 + i);
+                            let cAns = (i-1 < correctAnsArray.length) ? correctAnsArray[i-1].trim().toUpperCase() : '';
+                            pdfHtml += `<div style="margin-left:15px; margin-top:5px;">${subChar}) ${subOptions[i]} <br><span style="color:red;font-weight:bold;">&rarr; Đáp án đúng: ${cAns}</span></div>`;
+                        }
+                    } else {
+                        let cAns = correctAnsArray[0].trim().toUpperCase();
+                        pdfHtml += `<div style="margin-left:15px; margin-top:5px;"><span style="color:red;font-weight:bold;">&rarr; Đáp án đúng: ${cAns}</span></div>`;
+                    }
+                    pdfHtml += `</div>`;
+                });
+            }
+
+            if (part3Qs.length > 0) {
+                pdfHtml += `<div style="font-weight: bold; margin-top: 15px; margin-bottom: 10px; text-transform: uppercase;">PHẦN III. Câu trả lời ngắn</div>`;
+                part3Qs.forEach((q, idx) => {
+                    let cAns = String(q.answer || "").trim().toUpperCase();
+                    pdfHtml += `<div style="margin-bottom: 15px; page-break-inside: avoid; break-inside: avoid;"><b>Câu ${idx + 1}:</b> ${q.question}<br><div style="margin-left:15px;"><span style="color:red;font-weight:bold;">&rarr; Đáp án đúng: ${cAns}</span></div></div>`;
+                });
+            }
+
+            // Phần ký duyệt
+            pdfHtml += `
+                <table style="width: 100%; text-align: center; font-weight: bold; margin-top: 50px; border: none; page-break-inside: avoid;">
+                    <tr>
+                        <td style="width: 50%;">BAN GIÁM HIỆU<br><br><br><br><br></td>
+                        <td style="width: 50%;">GIÁO VIÊN RA ĐỀ<br><br><br><br><br>Lê Bá Thi</td>
+                    </tr>
+                </table>
+            </div>`;
+
+            let tempDiv = document.createElement('div'); tempDiv.innerHTML = pdfHtml;
+            let opt = { margin: 10, filename: `DeTrinhKy_MaDe${eCode}_${currentCourseObj.title}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['avoid-all', 'css', 'legacy'] } };
+            
+            let btn = document.querySelector("button[onclick='exportTeacherExam()']");
+            let oldText = btn.innerHTML; btn.innerHTML = "⏳ Đang xuất PDF..."; btn.disabled = true;
+            html2pdf().set(opt).from(tempDiv).save().then(() => { btn.innerHTML = oldText; btn.disabled = false; });
+        }
+
+        // DÀNH CHO HỌC SINH: BẮT ĐẦU LÀM BÀI
+        function startDigitalExam() {
+            const idSV = document.getElementById('student_id').value.trim();
+            const name = document.getElementById('student_name').value.trim();
+            const sClass = document.getElementById('student_class').value.trim();
+            const eCode = document.getElementById('exam_code').value;
+            
+            const configParams = document.getElementById('quiz_custom_limit').value.split('|');
+            const limitInput = parseInt(configParams[0]);
+            const quizTimeMinutes = parseInt(configParams[1]);
+            
+            if(!idSV || !name || !sClass) { alert("Vui lòng điền đủ MSSV, Họ tên và Lớp!"); return; }
+            
+            let questions = getQuestionsByCode(eCode, limitInput);
+            if(!questions) return;
+
+            currentStudentId = idSV; currentStudentName = name; currentStudentClass = sClass; currentExamCode = eCode;
             studentAnswers = { part1: {}, part2: {}, part3: {} };
             currentQuestionIndex = 0;
-
-            let p1Selected = pool1.sort(() => 0.5 - Math.random()).slice(0, reqPart1);
-            let p2Selected = pool2.sort(() => 0.5 - Math.random()).slice(0, reqPart2);
-            let p3Selected = pool3.sort(() => 0.5 - Math.random()).slice(0, reqPart3);
-            
-            selectedQuestions = [...p1Selected, ...p2Selected, ...p3Selected];
+            selectedQuestions = questions;
 
             let timeRemaining = quizTimeMinutes * 60;
             const container = document.getElementById('main-content-container');
             
             container.innerHTML = `
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="text-danger fw-bold m-0 fs-4">ĐANG LÀM BÀI MÔN: ${currentCourseObj.title}</h5>
+                    <h5 class="text-danger fw-bold m-0 fs-4">MÔN: ${currentCourseObj.title} - MÃ ĐỀ: ${currentExamCode}</h5>
                     <div id="countdown-timer">⏰ ${quizTimeMinutes}:00</div>
                 </div>
                 <div class="alert alert-secondary py-2 border-0 shadow-sm d-flex justify-content-between align-items-center flex-wrap">
                     <div>Thí sinh: <strong>${currentStudentName}</strong> - MSSV: <strong class="text-primary">${currentStudentId}</strong> - Lớp: <strong>${currentStudentClass}</strong></div>
-                    <div class="fw-bold text-success mt-2 mt-md-0">Gói thi: ${selectedQuestions.length} câu</div>
                 </div>
                 
                 <div class="card p-3 mb-4 bg-light border-0 shadow-sm">
@@ -298,15 +422,11 @@
             selectedQuestions.forEach((q, idx) => {
                 let status = 'unanswered';
                 let partStr = String(q.part || '1').trim();
-                
                 if (partStr === '2') {
                     let hasAns = ['a','b','c','d'].some(sub => studentAnswers.part2[`${q.id}_${sub}`] || studentAnswers.part2[q.id]);
                     if (hasAns) status = 'answered';
-                } else if (partStr === '3') {
-                    if (studentAnswers.part3[q.id]) status = 'answered';
-                } else {
-                    if (studentAnswers.part1[q.id]) status = 'answered';
-                }
+                } else if (partStr === '3') { if (studentAnswers.part3[q.id]) status = 'answered';
+                } else { if (studentAnswers.part1[q.id]) status = 'answered'; }
                 
                 if (idx === currentQuestionIndex) status = 'current';
                 html += `<span class="q-number-badge ${status}" onclick="jumpToQuestion(${idx})">${idx + 1}</span>`;
@@ -331,46 +451,20 @@
                         if(!subOptions[i].trim()) continue;
                         let subChar = String.fromCharCode(96 + i);
                         let currentSelected = studentAnswers.part2[`${q.id}_${subChar}`] || "";
-                        html += `
-                            <div class="tf-row">
-                                <span class="fs-5"><strong>${subChar})</strong> ${subOptions[i]}</span>
-                                <div class="text-nowrap ms-2">
-                                    <span onclick="selectPart2('${q.id}_${subChar}', 'Đ')" class="tf-btn me-2 ${currentSelected === 'Đ' ? 'selected-true' : ''}">Đúng</span>
-                                    <span onclick="selectPart2('${q.id}_${subChar}', 'S')" class="tf-btn ${currentSelected === 'S' ? 'selected-false' : ''}">Sai</span>
-                                </div>
-                            </div>`;
+                        html += `<div class="tf-row"><span class="fs-5"><strong>${subChar})</strong> ${subOptions[i]}</span><div class="text-nowrap ms-2"><span onclick="selectPart2('${q.id}_${subChar}', 'Đ')" class="tf-btn me-2 ${currentSelected === 'Đ' ? 'selected-true' : ''}">Đúng</span><span onclick="selectPart2('${q.id}_${subChar}', 'S')" class="tf-btn ${currentSelected === 'S' ? 'selected-false' : ''}">Sai</span></div></div>`;
                     }
                 } else {
                     let currentSelected = studentAnswers.part2[q.id] || "";
-                    html += `
-                        <div class="tf-row">
-                            <span class="fs-5">Vui lòng chọn tính Đúng hoặc Sai cho nhận định trên:</span>
-                            <div class="text-nowrap ms-2">
-                                <span onclick="selectPart2('${q.id}', 'Đ')" class="tf-btn me-2 ${currentSelected === 'Đ' ? 'selected-true' : ''}">Đúng</span>
-                                <span onclick="selectPart2('${q.id}', 'S')" class="tf-btn ${currentSelected === 'S' ? 'selected-false' : ''}">Sai</span>
-                            </div>
-                        </div>`;
+                    html += `<div class="tf-row"><span class="fs-5">Vui lòng chọn tính Đúng hoặc Sai cho nhận định trên:</span><div class="text-nowrap ms-2"><span onclick="selectPart2('${q.id}', 'Đ')" class="tf-btn me-2 ${currentSelected === 'Đ' ? 'selected-true' : ''}">Đúng</span><span onclick="selectPart2('${q.id}', 'S')" class="tf-btn ${currentSelected === 'S' ? 'selected-false' : ''}">Sai</span></div></div>`;
                 }
             } else if (partStr === '3') {
                 let currentVal = studentAnswers.part3[q.id] || "";
-                html += `
-                    <div class="part-indicator bg-primary">PHẦN III. Câu hỏi trả lời ngắn (Điền số/từ khóa)</div>
-                    <h4 class="fw-bold text-dark mb-4"><span class="text-success">Câu ${currentQuestionIndex + 1}:</span> ${q.question}</h4>
-                    <div class="p-4 bg-light rounded border text-center mt-3">
-                        <label class="form-label d-block fw-bold text-secondary mb-3">Nhập kết quả bài làm của em vào ô dưới đây:</label>
-                        <input type="text" id="p3_input_field" oninput="savePart3('${q.id}', this.value)" class="form-control num-fill-box mx-auto" value="${currentVal}" placeholder="Gõ đáp án vào...">
-                    </div>`;
+                html += `<div class="part-indicator bg-primary">PHẦN III. Câu hỏi trả lời ngắn (Điền số/từ khóa)</div><h4 class="fw-bold text-dark mb-4"><span class="text-success">Câu ${currentQuestionIndex + 1}:</span> ${q.question}</h4><div class="p-4 bg-light rounded border text-center mt-3"><label class="form-label d-block fw-bold text-secondary mb-3">Nhập kết quả bài làm của em vào ô dưới đây:</label><input type="text" id="p3_input_field" oninput="savePart3('${q.id}', this.value)" class="form-control num-fill-box mx-auto" value="${currentVal}" placeholder="Gõ đáp án vào..."></div>`;
             } else {
                 let currentSelected = studentAnswers.part1[q.id] || "";
-                html += `
-                    <div class="part-indicator bg-success">PHẦN I. Câu hỏi trắc nghiệm 4 lựa chọn</div>
-                    <h4 class="fw-bold text-dark mb-3"><span class="text-primary">Câu ${currentQuestionIndex + 1}:</span> ${q.question}</h4>
-                    <div class="opt-grid">
-                        <div onclick="selectPart1('${q.id}','A')" class="opt-box ${currentSelected === 'A' ? 'selected' : ''}"><span class="opt-prefix">A</span>${q.option_a || ""}</div>
-                        <div onclick="selectPart1('${q.id}','B')" class="opt-box ${currentSelected === 'B' ? 'selected' : ''}"><span class="opt-prefix">B</span>${q.option_b || ""}</div>
-                        <div onclick="selectPart1('${q.id}','C')" class="opt-box ${currentSelected === 'C' ? 'selected' : ''}"><span class="opt-prefix">C</span>${q.option_c || ""}</div>
-                        <div onclick="selectPart1('${q.id}','D')" class="opt-box ${currentSelected === 'D' ? 'selected' : ''}"><span class="opt-prefix">D</span>${q.option_d || ""}</div>
-                    </div>`;
+                html += `<div class="part-indicator bg-success">PHẦN I. Câu hỏi trắc nghiệm 4 lựa chọn</div><h4 class="fw-bold text-dark mb-3"><span class="text-primary">Câu ${currentQuestionIndex + 1}:</span> ${q.question}</h4><div class="opt-grid">`;
+                ['A','B','C','D'].forEach(opt => { html += `<div onclick="selectPart1('${q.id}','${opt}')" class="opt-box ${currentSelected === opt ? 'selected' : ''}"><span class="opt-prefix">${opt}</span>${q['option_'+opt.toLowerCase()] || ""}</div>`; });
+                html += `</div>`;
             }
 
             zone.innerHTML = html;
@@ -409,33 +503,24 @@
                     let ansArray = correctAns.split('|');
                     if (ansArray.length > 1) {
                         ansArray.forEach((ans, index) => { 
-                            p2Units++; 
-                            let subChar = String.fromCharCode(97 + index); 
+                            p2Units++; let subChar = String.fromCharCode(97 + index); 
                             if(studentAnswers.part2[`${q.id}_${subChar}`] === ans.trim()) p2Correct++; 
                         });
-                    } else { 
-                        p2Units++; 
-                        if(studentAnswers.part2[q.id] === ansArray[0].trim()) p2Correct++; 
-                    }
+                    } else { p2Units++; if(studentAnswers.part2[q.id] === ansArray[0].trim()) p2Correct++; }
                 } else if (partStr === '3') {
-                    p3Units++; 
-                    let userAns = String(studentAnswers.part3[q.id] || "").trim().toUpperCase(); 
+                    p3Units++; let userAns = String(studentAnswers.part3[q.id] || "").trim().toUpperCase(); 
                     if(userAns === correctAns && userAns !== "") p3Correct++;
                 } else {
-                    p1Units++; 
-                    if(studentAnswers.part1[q.id] === correctAns) p1Correct++;
+                    p1Units++; if(studentAnswers.part1[q.id] === correctAns) p1Correct++;
                 }
             });
 
             let totalGradedUnits = p1Units + p2Units + p3Units;
-            let unitScore = 0;
-            let finalScore = 0, score1 = 0, score2 = 0, score3 = 0;
+            let unitScore = 0, finalScore = 0, score1 = 0, score2 = 0, score3 = 0;
             
             if(totalGradedUnits > 0) { 
                 unitScore = 10 / totalGradedUnits;
-                score1 = p1Correct * unitScore;
-                score2 = p2Correct * unitScore;
-                score3 = p3Correct * unitScore;
+                score1 = p1Correct * unitScore; score2 = p2Correct * unitScore; score3 = p3Correct * unitScore;
                 finalScore = score1 + score2 + score3; 
             }
 
@@ -452,27 +537,15 @@
                         <div class="col-md-3 badge bg-danger fs-6 p-3">Phần II: ${score2.toFixed(2)}đ</div>
                         <div class="col-md-3 badge bg-info text-dark fs-6 p-3">Phần III: ${score3.toFixed(2)}đ</div>
                     </div>
-                    <button onclick="exportPDFReport()" class="btn btn-danger btn-lg fw-bold px-5 py-3 shadow rounded-pill">
-                        📥 XUẤT FILE PDF TỔNG HỢP & ĐÁP ÁN (MẪU CHUẨN)
-                    </button>
+                    <button onclick="exportStudentPDFReport()" class="btn btn-danger btn-lg fw-bold px-5 py-3 shadow rounded-pill">📥 XUẤT FILE PDF LƯU TRỮ BÀI LÀM</button>
                 </div>`;
             
-            // Bổ sung student_id vào gói gửi lên Google Sheets (Thầy nhớ cập nhật Code.gs trên Google Apps Script để nhận thêm cột này nhé)
-            fetch(SCRIPT_WEB_APP_URL, { 
-                method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify({ 
-                    student_id: currentStudentId,
-                    student_name: currentStudentName, 
-                    student_class: currentStudentClass, 
-                    course_title: currentCourseObj.title, 
-                    score: parseFloat(finalScore.toFixed(2)) 
-                }) 
-            }).catch(e => console.log(e));
+            fetch(SCRIPT_WEB_APP_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ student_id: currentStudentId, student_name: currentStudentName, student_class: currentStudentClass, course_title: currentCourseObj.title, score: parseFloat(finalScore.toFixed(2)) }) }).catch(e => console.log(e));
         }
 
-        function exportPDFReport() {
+        // HÀM XUẤT PDF CHO HỌC SINH (SAU KHI THI XONG)
+        function exportStudentPDFReport() {
             let sData = finalScoreData;
-            
             let pdfHtml = `
                 <div style="font-family: 'Times New Roman', serif; padding: 20px; font-size: 14px; line-height: 1.5; color: #000; width: 100%;">
                     <div style="text-align: center; color: #dc3545; font-size: 22px; font-weight: bold; margin-bottom: 5px;">BÀI THI & PHIẾU TRẢ LỜI TRẮC NGHIỆM ĐIỆN TỬ</div>
@@ -483,7 +556,7 @@
                             <td style="width: 70%; border: 1px solid #000; padding: 10px;">
                                 <b>Họ và tên thí sinh:</b> ${currentStudentName.toUpperCase()}<br><br>
                                 <b>Mã số sinh viên:</b> ${currentStudentId} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>Lớp:</b> ${currentStudentClass.toUpperCase()}<br><br>
-                                <b>Môn thi:</b> ${currentCourseObj.title}
+                                <b>Môn thi:</b> ${currentCourseObj.title} | <b>Mã đề:</b> ${currentExamCode}
                             </td>
                             <td style="width: 30%; border: 1px solid #000; padding: 10px; text-align: center;">
                                 <b>TỔNG ĐIỂM</b><br>
@@ -491,7 +564,6 @@
                             </td>
                         </tr>
                     </table>
-                    
                     <h3 style="text-align:center; background:#f0f0f0; padding: 8px; border:1px solid #000;">TRANG 1: NỘI DUNG ĐỀ THI & ĐÁP ÁN ĐÃ CHỌN</h3>
             `;
 
@@ -502,18 +574,12 @@
             if (part1Qs.length > 0) {
                 pdfHtml += `<div style="font-weight: bold; margin-top: 15px; margin-bottom: 10px; text-transform: uppercase;">PHẦN I. Câu trắc nghiệm nhiều lựa chọn (Đạt: ${sData.score1.toFixed(2)} điểm)</div>`;
                 part1Qs.forEach((q, idx) => {
-                    let ans = studentAnswers.part1[q.id] || '';
-                    let correctAns = String(q.answer).trim().toUpperCase();
-                    let earned = (ans === correctAns) ? sData.unitScore : 0;
-                    
+                    let ans = studentAnswers.part1[q.id] || ''; let correctAns = String(q.answer).trim().toUpperCase(); let earned = (ans === correctAns) ? sData.unitScore : 0;
                     pdfHtml += `<div style="margin-bottom: 15px; page-break-inside: avoid; break-inside: avoid;"><b>Câu ${idx + 1}:</b> ${q.question} <i style="color:red;">[Điểm: ${earned.toFixed(2)}/${sData.unitScore.toFixed(2)}]</i><br>`;
                     ['A','B','C','D'].forEach(opt => {
-                        let isSel = (ans === opt);
-                        let isCorr = (correctAns === opt);
-                        let text = q['option_' + opt.toLowerCase()] || '';
-                        let mark = isSel ? '[X]' : '[&nbsp;&nbsp;]';
+                        let isSel = (ans === opt); let isCorr = (correctAns === opt); let text = q['option_' + opt.toLowerCase()] || '';
                         let style = isCorr ? 'color: green; font-weight: bold;' : (isSel ? 'color: blue;' : 'color: #000;');
-                        let corrLabel = isCorr ? ' <b>&larr; (ĐÁP ÁN ĐÚNG)</b>' : '';
+                        let mark = isSel ? '[X]' : '[&nbsp;&nbsp;]'; let corrLabel = isCorr ? ' <b>&larr; (ĐÁP ÁN ĐÚNG)</b>' : '';
                         pdfHtml += `<div style="${style}">${mark} ${opt}. ${text}${corrLabel}</div>`;
                     });
                     pdfHtml += `</div>`;
@@ -524,27 +590,17 @@
                 pdfHtml += `<div style="font-weight: bold; margin-top: 15px; margin-bottom: 10px; text-transform: uppercase;">PHẦN II. Câu trắc nghiệm Đúng/Sai (Đạt: ${sData.score2.toFixed(2)} điểm)</div>`;
                 part2Qs.forEach((q, idx) => {
                     let subOptions = (q.question || "").replace(/\\\\n/g, '\n').replace(/\\n/g, '\n').split('\n');
-                    let titleQ = subOptions[0];
-                    let correctAnsArray = String(q.answer || "").split('|');
-                    
+                    let titleQ = subOptions[0]; let correctAnsArray = String(q.answer || "").split('|');
                     pdfHtml += `<div style="margin-bottom: 15px; page-break-inside: avoid; break-inside: avoid;"><b>Câu ${idx + 1}:</b> ${titleQ}<br>`;
                     if(subOptions.length > 1) {
                         for(let i=1; i<subOptions.length; i++) {
                             if(!subOptions[i].trim()) continue;
-                            let subChar = String.fromCharCode(96 + i);
-                            let ans = studentAnswers.part2[`${q.id}_${subChar}`] || 'Chưa chọn';
-                            let cAns = (i-1 < correctAnsArray.length) ? correctAnsArray[i-1].trim().toUpperCase() : '';
-                            let earned = (ans === cAns) ? sData.unitScore : 0;
-                            
-                            pdfHtml += `<div style="margin-left:15px; margin-top:5px;">${subChar}) ${subOptions[i]} <i style="color:red;">[Điểm: ${earned.toFixed(2)}/${sData.unitScore.toFixed(2)}]</i><br>`;
-                            pdfHtml += `<span style="${ans === cAns ? 'color:green;font-weight:bold;' : 'color:blue;'}">&rarr; Thí sinh chọn: ${ans}</span> | <b>Đáp án gốc: ${cAns}</b></div>`;
+                            let subChar = String.fromCharCode(96 + i); let ans = studentAnswers.part2[`${q.id}_${subChar}`] || 'Chưa chọn'; let cAns = (i-1 < correctAnsArray.length) ? correctAnsArray[i-1].trim().toUpperCase() : ''; let earned = (ans === cAns) ? sData.unitScore : 0;
+                            pdfHtml += `<div style="margin-left:15px; margin-top:5px;">${subChar}) ${subOptions[i]} <i style="color:red;">[Điểm: ${earned.toFixed(2)}/${sData.unitScore.toFixed(2)}]</i><br><span style="${ans === cAns ? 'color:green;font-weight:bold;' : 'color:blue;'}">&rarr; Thí sinh chọn: ${ans}</span> | <b>Đáp án gốc: ${cAns}</b></div>`;
                         }
                     } else {
-                        let ans = studentAnswers.part2[q.id] || 'Chưa chọn';
-                        let cAns = correctAnsArray[0].trim().toUpperCase();
-                        let earned = (ans === cAns) ? sData.unitScore : 0;
-                        pdfHtml += `<div style="margin-left:15px; margin-top:5px;"><i style="color:red;">[Điểm: ${earned.toFixed(2)}/${sData.unitScore.toFixed(2)}]</i><br>`;
-                        pdfHtml += `<span style="${ans === cAns ? 'color:green;font-weight:bold;' : 'color:blue;'}">&rarr; Thí sinh chọn: ${ans}</span> | <b>Đáp án gốc: ${cAns}</b></div>`;
+                        let ans = studentAnswers.part2[q.id] || 'Chưa chọn'; let cAns = correctAnsArray[0].trim().toUpperCase(); let earned = (ans === cAns) ? sData.unitScore : 0;
+                        pdfHtml += `<div style="margin-left:15px; margin-top:5px;"><i style="color:red;">[Điểm: ${earned.toFixed(2)}/${sData.unitScore.toFixed(2)}]</i><br><span style="${ans === cAns ? 'color:green;font-weight:bold;' : 'color:blue;'}">&rarr; Thí sinh chọn: ${ans}</span> | <b>Đáp án gốc: ${cAns}</b></div>`;
                     }
                     pdfHtml += `</div>`;
                 });
@@ -553,17 +609,12 @@
             if (part3Qs.length > 0) {
                 pdfHtml += `<div style="font-weight: bold; margin-top: 15px; margin-bottom: 10px; text-transform: uppercase;">PHẦN III. Câu trả lời ngắn (Đạt: ${sData.score3.toFixed(2)} điểm)</div>`;
                 part3Qs.forEach((q, idx) => {
-                    let ans = studentAnswers.part3[q.id] || 'Chưa trả lời';
-                    let cAns = String(q.answer || "").trim().toUpperCase();
-                    let earned = (ans.toUpperCase() === cAns) ? sData.unitScore : 0;
-                    
-                    pdfHtml += `<div style="margin-bottom: 15px; page-break-inside: avoid; break-inside: avoid;"><b>Câu ${idx + 1}:</b> ${q.question} <i style="color:red;">[Điểm: ${earned.toFixed(2)}/${sData.unitScore.toFixed(2)}]</i><br>`;
-                    pdfHtml += `<div style="margin-left:15px;"><span style="${ans.toUpperCase() === cAns ? 'color:green;font-weight:bold;' : 'color:blue;'}">&rarr; Thí sinh điền: ${ans}</span> | <b>Đáp án gốc: ${cAns}</b></div></div>`;
+                    let ans = studentAnswers.part3[q.id] || 'Chưa trả lời'; let cAns = String(q.answer || "").trim().toUpperCase(); let earned = (ans.toUpperCase() === cAns) ? sData.unitScore : 0;
+                    pdfHtml += `<div style="margin-bottom: 15px; page-break-inside: avoid; break-inside: avoid;"><b>Câu ${idx + 1}:</b> ${q.question} <i style="color:red;">[Điểm: ${earned.toFixed(2)}/${sData.unitScore.toFixed(2)}]</i><br><div style="margin-left:15px;"><span style="${ans.toUpperCase() === cAns ? 'color:green;font-weight:bold;' : 'color:blue;'}">&rarr; Thí sinh điền: ${ans}</span> | <b>Đáp án gốc: ${cAns}</b></div></div>`;
                 });
             }
 
-            pdfHtml += `<div class="html2pdf__page-break"></div>`;
-            pdfHtml += `<h3 style="text-align:center; background:#f0f0f0; padding: 8px; border:1px solid #000; margin-top: 20px;">TRANG 2: PHIẾU BÁO CÁO TỔNG QUÁT BONG BÓNG</h3>`;
+            pdfHtml += `<div class="html2pdf__page-break"></div><h3 style="text-align:center; background:#f0f0f0; padding: 8px; border:1px solid #000; margin-top: 20px;">TRANG 2: PHIẾU BÁO CÁO TỔNG QUÁT BONG BÓNG</h3>`;
             
             let circleStyle = "display:inline-block; width:20px; height:20px; border:1px solid #000; border-radius:50%; text-align:center; line-height:20px; font-size:11px; margin-right:3px;";
             let filledStyle = "background-color:#000; color:#fff; font-weight:bold;";
@@ -572,12 +623,10 @@
                 pdfHtml += `<div style="font-weight:bold; margin-top:15px; margin-bottom:10px; page-break-inside: avoid;">PHẦN I. Câu trắc nghiệm nhiều lựa chọn</div><table style="width:100%; border-collapse:collapse; page-break-inside: avoid;"><tr>`;
                 let count = 0;
                 part1Qs.forEach((q, idx) => {
-                    if (count > 0 && count % 4 === 0) pdfHtml += `</tr><tr>`;
-                    let ans = studentAnswers.part1[q.id] || '';
+                    if (count > 0 && count % 4 === 0) pdfHtml += `</tr><tr>`; let ans = studentAnswers.part1[q.id] || '';
                     pdfHtml += `<td style="width: 25%; padding: 8px 5px; white-space: nowrap; vertical-align: middle;"><b>Câu ${idx + 1}:</b> `;
                     ['A','B','C','D'].forEach(opt => { pdfHtml += `<span style="${circleStyle} ${ans === opt ? filledStyle : ''}">${opt}</span>`; });
-                    pdfHtml += `</td>`;
-                    count++;
+                    pdfHtml += `</td>`; count++;
                 });
                 while(count % 4 !== 0) { pdfHtml += `<td style="width: 25%;"></td>`; count++; }
                 pdfHtml += `</tr></table>`;
@@ -592,17 +641,11 @@
                     let subOptions = (q.question || "").replace(/\\\\n/g, '\n').replace(/\\n/g, '\n').split('\n');
                     if (subOptions.length > 1) {
                         for(let i=1; i<subOptions.length; i++) {
-                            if(!subOptions[i].trim()) continue;
-                            let subChar = String.fromCharCode(96 + i);
-                            let ans = studentAnswers.part2[`${q.id}_${subChar}`] || '';
+                            if(!subOptions[i].trim()) continue; let subChar = String.fromCharCode(96 + i); let ans = studentAnswers.part2[`${q.id}_${subChar}`] || '';
                             pdfHtml += `<div style="white-space: nowrap; margin-bottom: 5px;">${subChar}) &nbsp; <span style="${circleStyle} ${ans === 'Đ' ? filledStyle : ''}">Đ</span> <span style="${circleStyle} ${ans === 'S' ? filledStyle : ''}">S</span></div>`;
                         }
-                    } else {
-                        let ans = studentAnswers.part2[q.id] || '';
-                        pdfHtml += `<div style="white-space: nowrap;">Đ/S: &nbsp; <span style="${circleStyle} ${ans === 'Đ' ? filledStyle : ''}">Đ</span> <span style="${circleStyle} ${ans === 'S' ? filledStyle : ''}">S</span></div>`;
-                    }
-                    pdfHtml += `</td>`;
-                    count++;
+                    } else { let ans = studentAnswers.part2[q.id] || ''; pdfHtml += `<div style="white-space: nowrap;">Đ/S: &nbsp; <span style="${circleStyle} ${ans === 'Đ' ? filledStyle : ''}">Đ</span> <span style="${circleStyle} ${ans === 'S' ? filledStyle : ''}">S</span></div>`; }
+                    pdfHtml += `</td>`; count++;
                 });
                 while(count % 4 !== 0) { pdfHtml += `<td style="width: 25%; border:1px solid #000;"></td>`; count++; }
                 pdfHtml += `</tr></table>`;
@@ -612,38 +655,21 @@
                 pdfHtml += `<div style="font-weight:bold; margin-top:20px; margin-bottom:10px; page-break-inside: avoid;">PHẦN III. Câu trả lời ngắn</div><table style="width:100%; border-collapse:collapse; page-break-inside: avoid;"><tr>`;
                 let count = 0;
                 part3Qs.forEach((q, idx) => {
-                    if (count > 0 && count % 4 === 0) pdfHtml += `</tr><tr>`;
-                    let ans = studentAnswers.part3[q.id] || '';
+                    if (count > 0 && count % 4 === 0) pdfHtml += `</tr><tr>`; let ans = studentAnswers.part3[q.id] || '';
                     pdfHtml += `<td style='width: 25%; border: 1px solid #000; padding: 10px; text-align: center; vertical-align:top;'><b>Câu ${idx + 1}</b><br><br><div style='border: 1px dashed #000; padding: 5px; font-weight: bold; color:blue;'>${ans}</div></td>`;
                     count++;
                 });
                 while(count % 4 !== 0) { pdfHtml += `<td style="width: 25%; border:1px solid #000;"></td>`; count++; }
                 pdfHtml += `</tr></table>`;
             }
-
             pdfHtml += `</div>`; 
 
-            let tempDiv = document.createElement('div');
-            tempDiv.innerHTML = pdfHtml;
-            
-            let opt = {
-                margin:       10,
-                filename:     `Phieu_Cham_Diem_${currentStudentId}_${currentStudentClass}.pdf`,
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
-                pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
-            };
+            let tempDiv = document.createElement('div'); tempDiv.innerHTML = pdfHtml;
+            let opt = { margin: 10, filename: `PhieuDiem_${currentStudentId}_${currentStudentName.replace(/\s+/g, '')}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['avoid-all', 'css', 'legacy'] } };
 
-            let btn = document.querySelector("button[onclick='exportPDFReport()']");
-            let oldText = btn.innerHTML;
-            btn.innerHTML = "⏳ Hệ thống đang vẽ file PDF, vui lòng chờ...";
-            btn.disabled = true;
-
-            html2pdf().set(opt).from(tempDiv).save().then(() => {
-                btn.innerHTML = oldText;
-                btn.disabled = false;
-            });
+            let btn = document.querySelector("button[onclick='exportStudentPDFReport()']");
+            let oldText = btn.innerHTML; btn.innerHTML = "⏳ Đang vẽ PDF, chờ xíu..."; btn.disabled = true;
+            html2pdf().set(opt).from(tempDiv).save().then(() => { btn.innerHTML = oldText; btn.disabled = false; });
         }
 
         async function lookupResults() {
@@ -652,7 +678,7 @@
             const sClass = document.getElementById('search_student_class').value.trim().toLowerCase();
             const output = document.getElementById('lookup-output');
             
-            if(!idSV && !name && !sClass) { alert("Vui lòng nhập ít nhất một thông tin để tra cứu (MSSV, Họ tên hoặc Lớp)!"); return; }
+            if(!idSV && !name && !sClass) { alert("Nhập ít nhất một thông tin để tra cứu (MSSV, Tên hoặc Lớp)!"); return; }
             
             output.innerHTML = '<div class="text-center text-primary fw-bold mt-2">⏳ Đang tìm...</div>';
             try {
@@ -663,7 +689,6 @@
                     let matchClass = sClass === "" || String(h["student_class"]||"").toLowerCase() === sClass;
                     return matchId && matchName && matchClass;
                 });
-                
                 if(match.length === 0) { output.innerHTML = '<div class="alert alert-warning p-2 mt-2 text-center">Không có lịch sử thi khớp với yêu cầu.</div>'; } 
                 else {
                     let html = '<div class="list-group mt-2">';
