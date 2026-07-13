@@ -41,7 +41,7 @@
 <body>
     <div class="container mt-4 mb-5">
         <h2 class="text-center mb-1 text-success fw-bold">HỆ THỐNG LMS & KHẢO THÍ ĐÁM MÂY</h2>
-        <p class="text-center text-muted mb-4">Trường Trung cấp nghề Củ Chi - Tích hợp xuất file Word trình ký</p>
+        <p class="text-center text-muted mb-4">Trường Trung cấp nghề Củ Chi - Khoa Tin học - Nữ Công</p>
         
         <div class="row mt-4">
             <div class="col-md-4">
@@ -71,13 +71,14 @@
                 <ul class="nav nav-tabs mb-3" id="contentTabs" style="display: none;">
                     <li class="nav-item"><a class="nav-link active" id="tab-lessons" onclick="switchTab('lessons')">📚 Bài học Lý thuyết</a></li>
                     <li class="nav-item"><a class="nav-link text-primary" id="tab-quiz" onclick="switchTab('quiz')">📝 Học sinh: Thi trắc nghiệm</a></li>
-                    <li class="nav-item ms-auto"><a class="nav-link text-danger bg-light border" id="tab-admin" onclick="switchTab('admin')">🔒 GV: Tạo & In Đề</a></li>
+                    <li class="nav-item"><a class="nav-link text-danger bg-light border" id="tab-admin" onclick="switchTab('admin')">🔒 GV: Tạo & In Đề</a></li>
+                    <!-- <li class="nav-item ms-auto"><a class="nav-link text-danger bg-light border" id="tab-admin" onclick="switchTab('admin')">🔒 GV: Tạo & In Đề</a></li> -->
                 </ul>
 
                 <div id="main-content-container" class="bg-white p-4 rounded shadow-sm" style="min-height: 400px;">
                     <div class="alert alert-info text-center p-5">
-                        <h4 class="alert-heading fw-bold">Chào Thầy Thi và các em học sinh!</h4>
-                        <p class="m-0 fs-5 mt-3">Vui lòng chọn một môn học ở danh mục bên trái để bắt đầu hiển thị dữ liệu.</p>
+                        <h4 class="alert-heading fw-bold">Chào các em học sinh!</h4>
+                        <p class="m-0 fs-5 mt-3">Chọn một môn học ở danh mục bên trái để bắt đầu học.</p>
                     </div>
                 </div>
             </div>
@@ -237,7 +238,7 @@
             codeListHtml += `</div></div>`;
 
             container.innerHTML = `
-                <h5 class="mb-4 border-bottom pb-3 text-danger fw-bold text-center">⚙️ QUẢN TRỊ VIÊN: TẠO VÀ XUẤT ĐỀ TRÌNH KÝ</h5>
+                <h5 class="mb-4 border-bottom pb-3 text-danger fw-bold text-center">⚙️ TẠO VÀ XUẤT ĐỀ THI</h5>
                 <div class="card shadow p-5 border-0 bg-light rounded-4">
                     <div class="alert alert-warning">
                         <strong>Hướng dẫn:</strong> Nhập Mã Đề mới (Ví dụ: De_105) và chọn Cấu trúc. Chọn xuất PDF (để nguyên cấu trúc) hoặc WORD (nếu muốn vào sửa lại text). Hệ thống sẽ tự động lưu vào Google Sheets.
@@ -259,8 +260,8 @@
                     </div>
                     ${codeListHtml}
                     <div class="d-flex justify-content-center gap-3 mt-5 flex-wrap">
-                        <button id="btn-admin-export-pdf" onclick="createAndExportTeacherExam('pdf')" class="btn btn-danger btn-lg px-4 py-3 fw-bold shadow-sm rounded-pill fs-6">🖨️ TẠO & XUẤT PDF</button>
-                        <button id="btn-admin-export-word" onclick="createAndExportTeacherExam('word')" class="btn btn-primary btn-lg px-4 py-3 fw-bold shadow-sm rounded-pill fs-6">📝 TẠO & XUẤT WORD</button>
+                        <button id="btn-admin-export-pdf" onclick="createAndExportTeacherExam('pdf')" class="btn btn-danger btn-lg px-4 py-3 fw-bold shadow-sm rounded-pill fs-6">🖨️ TẠO & XUẤT FILE PDF</button>
+                        <button id="btn-admin-export-word" onclick="createAndExportTeacherExam('word')" class="btn btn-primary btn-lg px-4 py-3 fw-bold shadow-sm rounded-pill fs-6">📝 TẠO & XUẤT FILE WORD</button>
                     </div>
                 </div>`;
         }
